@@ -54,6 +54,7 @@ Configuring and using cTRL server
 --------
 
 In most cases it is enough to use the default configuration file. A full description of all product parameters is available here: <a href="/OPTIONS.md">Options</a>
+
 This guide uses UUIDs. But the client can set task identifiers in any format.
 
 General methods
@@ -159,7 +160,7 @@ Description of fields
 Examples of setting tasks
 --------
 
-- Example for one task
+Example for one task:
 
 ```json
 [
@@ -167,7 +168,7 @@ Examples of setting tasks
 ]
 ```
 
-- Example for a task list
+Example for a task list:
 
 ```json
 [
@@ -184,7 +185,7 @@ Notes
 - The key field, if this identifier is the same for two or more different tasks, in this case, when outputting information from the queue, you will receive information on this identifier for several tasks at once, this can be useful for grouping tasks, but they will be from the waiting queue run randomly
 - The type and lock fields, if they are assigned to two or more different tasks, are absolutely identical, in which case the server will perform these tasks from the wait queue in an arbitrary order, but only in turn
 - To sequentially execute a list of specific commands related to each other through a waiting queue, install these commands in one task, separated by && or write a shell script
-- Tasks performed in real time are performed strictly sequentially.
+- Tasks performed in real time are executed strictly sequentially.
 
 Todo
 ========
