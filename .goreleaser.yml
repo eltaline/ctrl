@@ -4,7 +4,7 @@ before:
   hooks:
 
 env_files:
-  github_token: /root/projects/keys/ctrl
+  github_token: /root/projects/keys/main
 
 builds:
   -
