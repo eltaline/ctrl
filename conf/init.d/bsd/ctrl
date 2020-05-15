@@ -1,0 +1,66 @@
+#!/bin/sh
+# PROVIDE: ctrl
+# REQUIRE: networking syslog
+ 
+. /etc/rc.subr
+ 
+name="ctrl"
+rcvar="ctrl_enable"
+
+command="/usr/local/ctrl/sbin/ctrl --config=/usr/local/ctrl/etc/ctrl.conf"
+
+ctrl_user="ctrl"
+
+ctrl_cnfdir="/usr/local/ctrl/etc"
+ctrl_libdir="/usr/local/ctrl/lib"
+ctrl_logdir="/usr/local/ctrl/log"
+
+pidfile="${ctrl_libdir}/${name}.pid"
+
+start_precmd="ctrl_precmd"
+start_cmd="/usr/sbin/daemon -f -u $ctrl_user $command"
+gracefulstop_cmd="ctrl_gracefulstop"
+
+load_rc_config $name
+: ${ctrl_enable:=no}
+
+ctrl_check()
+{
+
+    if [ -z `getent group ctrl` ]; then
+	pw groupadd ctrl
+    fi
+
+    if [ -z `getent passwd ctrl` ]; then
+	pw useradd ctrl -g ctrl
+    fi
+
+    if [ ! -d ${ctrl_cnfdir} ] ; then
+	install -d -o ctrl -g ctrl -m 755 ${ctrl_cnfdir}
+    fi
+
+    if [ ! -d ${ctrl_libdir} ] ; then
+	install -d -o ctrl -g ctrl -m 755 ${ctrl_libdir}
+    fi
+
+    if [ ! -d ${ctrl_logdir} ] ; then
+	install -d -o ctrl -g ctrl -m 755 ${ctrl_logdir}
+    fi
+
+}
+
+ctrl_precmd()
+{
+
+ctrl_check
+
+}
+
+ctrl_gracefulstop()
+{
+    echo "Performing a graceful stop:"
+    sig_stop="TERM"
+    run_rc_command ${rc_prefix}stop || return 1
+}
+ 
+run_rc_command "$1"

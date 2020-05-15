@@ -1,0 +1,25 @@
+[Unit]
+Description=cTRL Service
+
+[Service]
+Type=simple
+User=ctrl
+Group=ctrl
+PIDFile=/run/ctrl/ctrl.pid
+RuntimeDirectory=ctrl
+TimeoutStopSec=86400
+
+ExecStart=/usr/sbin/ctrl
+ExecStop=/bin/kill -s TERM $MAINPID
+
+Restart=always
+RestartSec=60s
+
+StandardOutput=syslog
+StandardError=syslog
+
+LimitNOFILE=131072
+
+[Install]
+WantedBy=multi-user.target
+Alias=ctrl.service
