@@ -143,7 +143,7 @@ curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd
 curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 ```
 
-Формат
+Формат ввода
 --------
 
 Описание полей
@@ -174,6 +174,51 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 {"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15},
 {"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15},
 {"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15}
+]
+```
+
+Формат вывода
+--------
+
+Описание полей
+--------
+
+- key - произвольный уникальный идентификатор
+- time - время приема задачи
+- type - произвольный тип задачи
+- path - путь для смены директории перед запуском команды
+- lock - произвольная метка блокировки
+- command - команда
+- timeout - таймаут
+- stdcode - не используется на данный момент
+- stdout - стандартный вывод
+- errcode - код ошибки
+- stderr - стандартный вывод ошибки
+- runtime - время выполнения в миллисекундах
+
+- delcode - код ошибки при удалении задачи
+- delerr - сообщение с ошибкой при удалении задачи
+
+Примеры вывода
+--------
+
+Вывод завершенных задач:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
+]
+```
+
+Вывод удаленных задач:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
 ]
 ```
 

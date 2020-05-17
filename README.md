@@ -145,7 +145,7 @@ Deleting all tasks from the list of completed tasks
 curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 ```
 
-Format
+Input format
 --------
 
 Description of fields
@@ -176,6 +176,50 @@ Example for a task list:
 {"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15},
 {"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15},
 {"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15}
+]
+```
+
+Output format
+--------
+
+Description of fields
+--------
+
+- key - an arbitrary unique identifier
+- type - arbitrary type of task
+- path - path to change the directory before running the command
+- lock - arbitrary lock label
+- command - command
+- timeout - timeout
+- stdcode - not used at the moment
+- stdout - standard output
+- errcode - error code
+- stderr - standard error output
+- runtime - runtime in milliseconds
+
+- delcode - error code when deleting a task
+- delerr - error message when deleting a task
+
+Output example
+--------
+
+Output of completed tasks:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
+]
+```
+
+Output of deleted tasks:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
 ]
 ```
 
