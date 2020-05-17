@@ -30,7 +30,7 @@ Requirements
 Real application
 ========
 
-We use this server to perform delayed tasks for parallel video conversion using ffmpeg, but the server can execute any commands through the shell interpreters.
+A new software of the cTRL server has been released. We use this server to perform delayed tasks for parallel video conversion using ffmpeg with limiting processes on several video servers with Nvidia GPU, but the server can execute any commands through the shell interpreters. This is a first release.
 
 Documentation
 ========
