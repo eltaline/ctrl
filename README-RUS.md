@@ -195,7 +195,6 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 - errcode - код ошибки
 - stderr - стандартный вывод ошибки
 - runtime - время выполнения в миллисекундах
-
 - delcode - код ошибки при удалении задачи
 - delerr - сообщение с ошибкой при удалении задачи
 

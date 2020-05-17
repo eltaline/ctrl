@@ -196,7 +196,6 @@ Description of fields
 - errcode - error code
 - stderr - standard error output
 - runtime - runtime in milliseconds
-
 - delcode - error code when deleting a task
 - delerr - error message when deleting a task
 
