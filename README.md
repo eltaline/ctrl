@@ -203,8 +203,8 @@ errcode
 delcode
 --------
 
-0 - (no error)
-1 - (any error)
+- 0 (no error)
+- 1 (any error)
 
 Todo
 ========
