@@ -13,7 +13,7 @@ Features
 - Multi threading
 - Supports HTTPS and Auth/IP authorization
 - Supported HTTP methods: GET, POST
-- Parallel execution of tasks in real time
+- Parallel execution of tasks in realtime
 - Receiving tasks in the queue for deferred parallel execution of commands
 - Limiting the maximum number of threads per virtual host
 - Supports continuous task execution queue
@@ -61,7 +61,7 @@ This guide uses UUIDs. But the client can set task identifiers in any format.
 General methods
 --------
 
-Run a task or task list in real time with pending execution
+Run a task or task list in realtime with pending execution
 
 ```bash
 curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.json http://localhost/run
@@ -182,7 +182,8 @@ Example for a task list:
 Notes
 --------
 
-- The limitation of simultaneously running tasks to each virtual host is regulated by the vthreads parameter in the server configuration file
+- The limitation of simultaneously running tasks from queue to each virtual host is regulated by the ```vthreads``` parameter in the server configuration file
+- The limitation of simultaneously running tasks in realtime to each virtual host is regulated by the ```rthreads``` parameter in the server configuration file
 - The key field, if this identifier is the same for two or more different tasks, in this case, when outputting information from the queue, you will receive information on this identifier for several tasks at once, this can be useful for grouping tasks, but they will be from the waiting queue run randomly
 - The type and lock fields, if they are assigned to two or more different tasks, are absolutely identical, in which case the server will perform these tasks from the wait queue in an arbitrary order, but only in turn
 - The type and lock fields set in real time do not matter, but they are required, all tasks will be performed in parallel mode whenever possible.
@@ -199,6 +200,7 @@ errcode
 - 1 (any error)
 - 124 (timeout)
 - 255 (failed to start command)
+- shell`s exit statuses available in stderr field
 
 delcode
 --------
