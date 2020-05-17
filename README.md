@@ -50,7 +50,7 @@ systemctl enable ctrl && systemctl start ctrl
 Configuring and using cTRL server
 --------
 
-Default credentials: admin:swordfish
+Default credentials: ```admin:swordfish```
 
 Password generation: ```echo -n "mypassword" | sha512sum```
 
