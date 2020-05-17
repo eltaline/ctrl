@@ -300,15 +300,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							return
 						}
 
-						err = NDBInsert(cldb, fvbucket, bkey, pbuffer.Bytes(), 0)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
 						err = NDBDelete(cldb, rvbucket, bkey)
 						if err != nil {
 							appLogger.Errorf("| Virtual Host [%s] | Delete received task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+							return
+						}
+
+						err = NDBInsert(cldb, fvbucket, bkey, pbuffer.Bytes(), 0)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 							return
 						}
 
@@ -341,15 +341,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							return
 						}
 
-						err = NDBInsert(cldb, fvbucket, bkey, pbuffer.Bytes(), 0)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
 						err = NDBDelete(cldb, rvbucket, bkey)
 						if err != nil {
 							appLogger.Errorf("| Virtual Host [%s] | Delete received task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+							return
+						}
+
+						err = NDBInsert(cldb, fvbucket, bkey, pbuffer.Bytes(), 0)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 							return
 						}
 
@@ -538,6 +538,12 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						return
 					}
 
+					err = NDBDelete(cldb, rvbucket, bkey)
+					if err != nil {
+						appLogger.Errorf("| Virtual Host [%s] | Delete received task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+						return
+					}
+
 					err = NDBDelete(cldb, wvbucket, bkey)
 					if err != nil {
 						appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
@@ -547,12 +553,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					err = NDBInsert(cldb, fvbucket, bkey, ebuffer.Bytes(), vttltime)
 					if err != nil {
 						appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-						return
-					}
-
-					err = NDBDelete(cldb, rvbucket, bkey)
-					if err != nil {
-						appLogger.Errorf("| Virtual Host [%s] | Delete received task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 						return
 					}
 
