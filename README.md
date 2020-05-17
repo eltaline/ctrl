@@ -11,10 +11,10 @@ Features
 ========
 
 - Multi threading
-- Supports HTTPS and IP authorization
+- Supports HTTPS and Auth/IP authorization
 - Supported HTTP methods: GET, POST
+- Parallel execution of tasks in real time
 - Receiving tasks in the queue for deferred parallel execution of commands
-- Sequential execution of tasks in real time
 - Limiting the maximum number of threads per virtual host
 - Supports continuous task execution queue
 - Automatic simultaneous execution of only one identical task
@@ -50,6 +50,10 @@ systemctl enable ctrl && systemctl start ctrl
 Configuring and using cTRL server
 --------
 
+Default credentials: admin:swordfish
+
+Password generation: echo -n "mypassword" | sha512sum
+
 In most cases it is enough to use the default configuration file. A full description of all product parameters is available here: <a href="/OPTIONS.md">Options</a>
 
 This guide uses UUIDs. But the client can set task identifiers in any format.
@@ -60,85 +64,85 @@ General methods
 Run a task or task list in real time with pending execution
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d @task.json http://localhost/run
+curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.json http://localhost/run
 ```
 
 Queuing a task or task list
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d @task.json http://localhost/task
+curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.json http://localhost/task
 ```
 
 Getting a task from the received queue
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
 ```
 
 Getting all tasks from the received queue
 
 ```bash
-curl "http://localhost/show?queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?queue=received"
 ```
 
 Getting a task from the working queue
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
 ```
 
 Getting all tasks from the working queue
 
 ```bash
-curl "http://localhost/show?queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?queue=working"
 ```
 
 Getting a task from the list of completed tasks
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
 ```
 
 Getting all tasks from the list of completed tasks
 
 ```bash
-curl "http://localhost/show?queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?queue=completed"
 ```
 
 Deleting a task from the received queue
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
 ```
 
 Deleting all tasks from the received queue
 
 ```bash
-curl "http://localhost/del?queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?queue=received"
 ```
 
-Deleting a task from the working queue, without interrupting the current tasks
+Deleting a task from the working queue
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
 ```
 
-Deleting all tasks from the working queue, without interrupting current tasks
+Deleting all tasks from the working queue
 
 ```bash
-curl "http://localhost/del?queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?queue=working"
 ```
 
 Deleting a task from the list of completed tasks
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
 ```
 
 Deleting all tasks from the list of completed tasks
 
 ```bash
-curl "http://localhost/del?queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 ```
 
 Format
@@ -181,13 +185,31 @@ Notes
 - The limitation of simultaneously running tasks to each virtual host is regulated by the vthreads parameter in the server configuration file
 - The key field, if this identifier is the same for two or more different tasks, in this case, when outputting information from the queue, you will receive information on this identifier for several tasks at once, this can be useful for grouping tasks, but they will be from the waiting queue run randomly
 - The type and lock fields, if they are assigned to two or more different tasks, are absolutely identical, in which case the server will perform these tasks from the wait queue in an arbitrary order, but only in turn
+- The type and lock fields set in real time do not matter, but they are required, all tasks will be performed in parallel mode whenever possible.
 - To sequentially execute a list of specific commands related to each other through a waiting queue, install these commands in one task, separated by && or write a shell script
-- Tasks performed in real time are executed strictly sequentially.
+- Tasks performed in real time are executed parallel.
+
+Error Codes
+--------
+
+errcode
+--------
+
+- 0 (no error)
+- 1 (any error)
+- 124 (timeout)
+- 255 (failed to start command)
+
+delcode
+--------
+
+0 - (no error)
+1 - (any error)
 
 Todo
 ========
 
-- Make kill support for running commands
+- Any suggestions
 
 Parameters
 ========

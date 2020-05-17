@@ -76,6 +76,7 @@ nfpms:
     config_files:
       "conf/ctrl/ctrl.conf": "/etc/ctrl/ctrl.conf"
       "conf/ctrl/ips-localhost.conf": "/etc/ctrl/ips-localhost.conf"
+      "conf/ctrl/uss-localhost.conf": "/etc/ctrl/uss-localhost.conf"
 
     scripts:
       postinstall: "scripts/postinstall.sh"

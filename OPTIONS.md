@@ -154,8 +154,14 @@ sslkey
 - **Type:** string
 - **Section:** [server.name]
 
+ussallow
+- **Description:** This is the path to the file of login:pass(sha512) pairs for the GET/POST methods for the virtual host.
+- **Default:** ""
+- **Type:** string
+- **Section:** [server.name]
+
 ipsallow
-- **Description:** This is the path to the file of allowed IP addresses of the GET/POST methods for the virtual host. If the file is not specified, a 403 error will always be returned.
+- **Description:** This is the path to the file of allowed IP addresses for the GET/POST methods for the virtual host.
 - **Default:** ""
 - **Type:** string
 - **Section:** [server.name]
@@ -166,10 +172,17 @@ shell
 - **Type:** string
 - **Section:** [server.name]
 
-vthreads
-- **Description:** Maximum number of parallel tasks.
+rthreads
+- **Description:** Maximum number of concurrently running parallel tasks in real time.
 - **Default:** 8
-- **Values:** 1-256
+- **Values:** 1-4096
+- **Type:** int
+- **Section:** [server.name]
+
+vthreads
+- **Description:** Maximum number of concurrently running parallel tasks in queue mode.
+- **Default:** 8
+- **Values:** 1-4096
 - **Type:** int
 - **Section:** [server.name]
 

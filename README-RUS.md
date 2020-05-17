@@ -9,10 +9,10 @@ cTRL это сервер написанный на языке Go, использ
 ========
 
 - Многопоточность
-- Поддержка HTTPS и IP авторизации
+- Поддержка HTTPS и Auth/IP авторизации
 - Поддерживаемые HTTP методы: GET, POST
 - Прием задач в очередь для отложенного параллельного исполнения команд
-- Последовательное исполнение задач в реальном времени
+- Параллельное исполнение задач в реальном времени
 - Ограничение максимального количества потоков на каждый виртуальный хост
 - Поддерживает непрерывную очередь исполнения задач
 - Автоматическое одновременное исполнение только одной одинаковой задачи
@@ -48,6 +48,10 @@ systemctl enable ctrl && systemctl start ctrl
 Настройка и использование cTRL сервера
 --------
 
+Учетные данные по умолчанию: admin:swordfish
+
+Генерация пароля: echo -n "mypassword" | sha512sum
+
 В большинстве случаев достаточно воспользоваться конфигурационным файлом по умолчанию. Полное описание всех параметров продукта доступно здесь: <a href="/OPTIONS-RUS.md">Опции</a>
 
 В данном руководстве используются идентификаторы типа UUID. Но клиент может устанавливать идентификаторы задач в произвольном формате.
@@ -58,85 +62,85 @@ systemctl enable ctrl && systemctl start ctrl
 Запуск задачи или списка задач в реальном времени с ожиданием исполнения
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d @task.json http://localhost/run
+curl -X POST -H "Auth: login:pass" "Content-Type: application/json" -d @task.json http://localhost/run
 ```
 
 Постановка задачи или списка задач в очередь
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d @task.json http://localhost/task
+curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.json http://localhost/task
 ```
 
 Получение задачи из очереди ожидания
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
 ```
 
 Получение всех задач из очереди ожидания
 
 ```bash
-curl "http://localhost/show?queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?queue=received"
 ```
 
 Получение задачи из рабочей очереди
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
 ```
 
 Получение всех задач из рабочей очереди
 
 ```bash
-curl "http://localhost/show?queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?queue=working"
 ```
 
 Получение задачи из списка завершенных задач
 
 ```bash
-curl "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
 ```
 
 Получение всех задач из списка завершенных задач
 
 ```bash
-curl "http://localhost/show?queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?queue=completed"
 ```
 
 Удаление задачи из очереди ожидания
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
 ```
 
 Удаление всех задач из очереди ожидания
 
 ```bash
-curl "http://localhost/del?queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?queue=received"
 ```
 
-Удаление задачи из рабочей очереди , без прерывания текущих задач
+Удаление задачи из рабочей очереди
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
 ```
 
-Удаление всех задач из рабочей очереди, без прерывания текущих задач
+Удаление всех задач из рабочей очереди
 
 ```bash
-curl "http://localhost/del?queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?queue=working"
 ```
 
 Удаление задачи из списка завершенных задач
 
 ```bash
-curl "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
 ```
 
 Удаление всех задач из списка завершенных задач
 
 ```bash
-curl "http://localhost/del?queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 ```
 
 Формат
@@ -179,13 +183,31 @@ curl "http://localhost/del?queue=completed"
 - Ограничение одновременно запущенных задач на каждый виртуальный хост регулируется посредством параметра vthreads в конфигурационном файле сервера
 - Поле key, если данный идентификатор будет одинаковым для двух и более разных задач, в таком случае при выводе информации из очереди вы будете получать по данному идентификатору информацию сразу по нескольким задачам, это может быть полезно для группировки задач, но из очереди ожидания они будут выполняться в произвольном порядке
 - Поля type и lock, если они будут назначены двум и более разным задачам абсолютно одинаковыми, в таком случае сервер будет выполнять эти задачи из очереди ожидания в произвольном порядке, но только поочереди
+- Поля type и lock, установленные в реальном времени, не имеют значения, но они обязательны, все задачи будут выполняться по возможности в параллельном режиме.
 - Для последовательного выполнения списка конкретных связанных друг с другом команд через очередь ожидания, устанавливайте данные команды в одну задачу, разделенные && или же напишите shell скрипт
-- Задачи выполняемые в реальном времени исполняются строго последовательно.
+- Задачи выполняемые в реальном времени исполняются параллельно.
+
+Errors
+--------
+
+errcode
+--------
+
+- 0 (нет ошибки)
+- 1 (любая ошибка)
+- 124 (таймаут)
+- 255 (не удалось запустить команду)
+
+delcode
+--------
+
+- 0 (нет ошибки)
+- 1 (любая ошибка)
 
 ТуДу
 ========
 
-- Сделать поддержку kill для запущенных команд
+- Любые предложения
 
 Параметры
 ========

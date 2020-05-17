@@ -26,9 +26,11 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"github.com/kataras/iris"
 	"net"
@@ -79,6 +81,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		ip := ctx.RemoteAddr()
 		cip := net.ParseIP(ip)
+		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		furi := ctx.FullRequestURI()
@@ -91,11 +94,49 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		params := ctx.URLParams()
 
 		badhost := true
+		baduser := true
 		badip := true
+
+		user := ""
+		pass := ""
+		phsh := ""
 
 		rvbucket := ""
 		wvbucket := ""
 		fvbucket := ""
+
+		if ush != "" {
+
+			mchpair := rgxpair.MatchString(ush)
+
+			if !mchpair {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | Bad authorization format", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.Writef("[ERRO] Bad authorization format | Virtual Host [%s]\n", vhost)
+					if err != nil {
+						getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				return
+
+			}
+
+			sha_512 := sha512.New()
+
+			user = strings.Split(ush, ":")[0]
+			pass = strings.Split(ush, ":")[1]
+
+			sha_512.Write([]byte(pass))
+			phsh = fmt.Sprintf("%x", sha_512.Sum(nil))
+
+		}
 
 		for _, Server := range config.Server {
 
@@ -103,19 +144,45 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				badhost = false
 
-				for _, Vhost := range ipsallow {
+				if user != "" && pass != "" {
 
-					if vhost == Vhost.Vhost {
+					for _, Vhost := range ussallow {
 
-						for _, CIDR := range Vhost.CIDR {
-							_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
-							if ipnet.Contains(cip) {
-								badip = false
-								break
+						if vhost == Vhost.Vhost {
+
+							for _, PAIR := range Vhost.PAIR {
+
+								if user == PAIR.User && phsh == PAIR.Hash {
+									baduser = false
+									break
+								}
 							}
+
+							break
+
 						}
 
-						break
+					}
+
+				}
+
+				if baduser {
+
+					for _, Vhost := range ipsallow {
+
+						if vhost == Vhost.Vhost {
+
+							for _, CIDR := range Vhost.CIDR {
+								_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
+								if ipnet.Contains(cip) {
+									badip = false
+									break
+								}
+							}
+
+							break
+
+						}
 
 					}
 
@@ -150,7 +217,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		}
 
-		if badip {
+		if baduser && badip {
 
 			ctx.StatusCode(iris.StatusForbidden)
 
@@ -158,7 +225,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			if debugmode {
 
-				_, err = ctx.Writef("[ERRO] Not found allowed ip | Virtual Host [%s]\n", vhost)
+				_, err = ctx.Writef("[ERRO] Not found allowed user or not found allowed ip | Virtual Host [%s]\n", vhost)
 				if err != nil {
 					getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
@@ -433,7 +500,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 }
 
 // CtrlDel : Delete task command or commands method
-func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
+func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 	return func(ctx iris.Context) {
 		defer wg.Done()
 
@@ -474,6 +541,7 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		ip := ctx.RemoteAddr()
 		cip := net.ParseIP(ip)
+		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		furi := ctx.FullRequestURI()
@@ -486,11 +554,49 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		params := ctx.URLParams()
 
 		badhost := true
+		baduser := true
 		badip := true
+
+		user := ""
+		pass := ""
+		phsh := ""
 
 		rvbucket := ""
 		wvbucket := ""
 		fvbucket := ""
+
+		if ush != "" {
+
+			mchpair := rgxpair.MatchString(ush)
+
+			if !mchpair {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | Bad authorization format", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.Writef("[ERRO] Bad authorization format | Virtual Host [%s]\n", vhost)
+					if err != nil {
+						getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				return
+
+			}
+
+			sha_512 := sha512.New()
+
+			user = strings.Split(ush, ":")[0]
+			pass = strings.Split(ush, ":")[1]
+
+			sha_512.Write([]byte(pass))
+			phsh = fmt.Sprintf("%x", sha_512.Sum(nil))
+
+		}
 
 		for _, Server := range config.Server {
 
@@ -498,19 +604,45 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				badhost = false
 
-				for _, Vhost := range ipsallow {
+				if user != "" && pass != "" {
 
-					if vhost == Vhost.Vhost {
+					for _, Vhost := range ussallow {
 
-						for _, CIDR := range Vhost.CIDR {
-							_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
-							if ipnet.Contains(cip) {
-								badip = false
-								break
+						if vhost == Vhost.Vhost {
+
+							for _, PAIR := range Vhost.PAIR {
+
+								if user == PAIR.User && phsh == PAIR.Hash {
+									baduser = false
+									break
+								}
 							}
+
+							break
+
 						}
 
-						break
+					}
+
+				}
+
+				if baduser {
+
+					for _, Vhost := range ipsallow {
+
+						if vhost == Vhost.Vhost {
+
+							for _, CIDR := range Vhost.CIDR {
+								_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
+								if ipnet.Contains(cip) {
+									badip = false
+									break
+								}
+							}
+
+							break
+
+						}
 
 					}
 
@@ -545,7 +677,7 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		}
 
-		if badip {
+		if baduser && badip {
 
 			ctx.StatusCode(iris.StatusForbidden)
 
@@ -553,7 +685,7 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			if debugmode {
 
-				_, err = ctx.Writef("[ERRO] Not found allowed ip | Virtual Host [%s]\n", vhost)
+				_, err = ctx.Writef("[ERRO] Not found allowed user or not found allowed ip | Virtual Host [%s]\n", vhost)
 				if err != nil {
 					getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
@@ -802,6 +934,18 @@ func CtrlDel(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 					delcode = 1
 					delerr = err.Error()
 					getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 500 | Delete task from db error | Key [%s] | %v", vhost, ip, key, err)
+				}
+
+				if bucket == wvbucket {
+
+					skey := string(task.Key)
+
+					cmkey := vhost + ":" + skey
+
+					if keymutex.IsLock(cmkey) {
+						keymutex.UnLock(cmkey)
+					}
+
 				}
 
 				d.Key = spk

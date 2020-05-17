@@ -31,6 +31,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/eltaline/gron"
+	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"github.com/eltaline/toml"
 	"github.com/kataras/iris"
@@ -44,6 +45,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -80,15 +82,28 @@ type server struct {
 	HOST     string
 	SSLCRT   string
 	SSLKEY   string
+	USSALLOW string
 	IPSALLOW string
 	SHELL    string
+	RTHREADS int
 	VTHREADS int
 	VTIMEOUT uint32
 	VTTLTIME uint32
 }
 
-// Allow : type for key and slice pairs of a virtual host and CIDR allowable networks
-type Allow struct {
+// UssAllow : type for key and slice pairs of a virtual host and user/hash allowable pairs
+type UssAllow struct {
+	Vhost string
+	PAIR  []strPAIR
+}
+
+type strPAIR struct {
+	User string
+	Hash string
+}
+
+// IpsAllow : type for key and slice pairs of a virtual host and CIDR allowable networks
+type IpsAllow struct {
 	Vhost string
 	CIDR  []strCIDR
 }
@@ -192,7 +207,8 @@ var (
 
 	onlyssl bool = false
 
-	ipsallow []Allow
+	ussallow []UssAllow
+	ipsallow []IpsAllow
 
 	readtimeout       time.Duration = 60 * time.Second
 	readheadertimeout time.Duration = 5 * time.Second
@@ -217,10 +233,17 @@ var (
 		vcounter map[string]int
 	}{vcounter: make(map[string]int)}
 
+	rc = struct {
+		sync.RWMutex
+		rcounter map[string]int
+	}{rcounter: make(map[string]int)}
+
 	logdir  string = "/var/log/ctrl"
 	logmode os.FileMode
 
 	pidfile string = "/run/ctrl/ctrl.pid"
+
+	rgxpair = regexp.MustCompile("^(.+):(.+)$")
 )
 
 // Init Function
@@ -399,9 +422,58 @@ func init() {
 
 		}
 
+		if Server.USSALLOW != "" {
+
+			var uss UssAllow
+
+			ussfile, err := os.OpenFile(filepath.Clean(Server.USSALLOW), os.O_RDONLY, os.ModePerm)
+			if err != nil {
+				appLogger.Errorf("Can`t open uss allow file error | %s | File [%s] | %v", section, Server.USSALLOW, err)
+				fmt.Printf("Can`t open uss allow file error | %s | File [%s] | %v\n", section, Server.USSALLOW, err)
+				os.Exit(1)
+			}
+			// No need to defer in loop
+
+			uss.Vhost = Server.HOST
+
+			sussallow := bufio.NewScanner(ussfile)
+			for sussallow.Scan() {
+
+				line := sussallow.Text()
+
+				mchpair := rgxpair.MatchString(line)
+				Check(mchpair, section, "ussallow", Server.USSALLOW, "Bad format user:sha512 pairs", DoExit)
+
+				user := strings.Split(line, ":")[0]
+				phsh := strings.Split(line, ":")[1]
+
+				uss.PAIR = append(uss.PAIR, struct {
+					User string
+					Hash string
+				}{user, phsh})
+
+			}
+
+			err = ussfile.Close()
+			if err != nil {
+				appLogger.Errorf("Close after read uss allow file error | %s | File [%s] | %v\n", section, Server.USSALLOW, err)
+				fmt.Printf("Close after read uss allow file error | %s | File [%s] | %v\n", section, Server.USSALLOW, err)
+				os.Exit(1)
+			}
+
+			err = sussallow.Err()
+			if err != nil {
+				fmt.Printf("Read lines from a uss allow file error | %s | File [%s] | %v\n", section, Server.USSALLOW, err)
+				return
+			}
+
+			ussallow = append(ussallow, uss)
+
+		}
+
 		if Server.IPSALLOW != "" {
 
-			var ips Allow
+			var ips IpsAllow
 
 			ipsfile, err := os.OpenFile(filepath.Clean(Server.IPSALLOW), os.O_RDONLY, os.ModePerm)
 			if err != nil {
@@ -449,8 +521,11 @@ func init() {
 		mchshell := rgxshell.MatchString(Server.SHELL)
 		Check(mchshell, section, "shell", Server.SHELL, "ex. /bin/bash", DoExit)
 
-		mchvthreads := RBInt(Server.VTHREADS, 1, 256)
-		Check(mchvthreads, section, "vthreads", fmt.Sprintf("%d", Server.VTHREADS), "from 1 to 256", DoExit)
+		mchrthreads := RBInt(Server.RTHREADS, 1, 4096)
+		Check(mchrthreads, section, "rthreads", fmt.Sprintf("%d", Server.RTHREADS), "from 1 to 4096", DoExit)
+
+		mchvthreads := RBInt(Server.VTHREADS, 1, 4096)
+		Check(mchvthreads, section, "vthreads", fmt.Sprintf("%d", Server.VTHREADS), "from 1 to 4096", DoExit)
 
 		mchvtimeout := RBInt(int(Server.VTIMEOUT), 1, 2592000)
 		Check(mchvtimeout, section, "vtimeout", fmt.Sprintf("%d", Server.VTIMEOUT), "from 1 to 2592000", DoExit)
@@ -461,6 +536,7 @@ func init() {
 		// Output Important Server Configuration Options
 
 		appLogger.Warnf("| Host [%s] | Shell [%s]", Server.HOST, Server.SHELL)
+		appLogger.Warnf("| Host [%s] | Scheduler Run Threads Count [%d]", Server.HOST, Server.RTHREADS)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Threads Count [%d]", Server.HOST, Server.VTHREADS)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Timeout Seconds [%d]", Server.HOST, Server.VTIMEOUT)
 		appLogger.Warnf("| Host [%s] | Scheduler Task TTL Seconds [%d]", Server.HOST, Server.VTTLTIME)
@@ -546,6 +622,10 @@ func main() {
 
 	appLogger.Warnf("cTRL server running with a pid: %s", gpid)
 
+	// Key Mapped Mutex
+
+	keymutex := mmutex.NewMMutex()
+
 	// Database
 
 	dbdir = filepath.Clean(config.Global.DBDIR)
@@ -591,7 +671,7 @@ func main() {
 
 	cron.AddFunc(gron.Every(schtime*time.Second), func() {
 		wg.Add(1)
-		CtrlScheduler(cldb)
+		CtrlScheduler(cldb, keymutex)
 		wg.Done()
 	})
 
@@ -621,7 +701,7 @@ func main() {
 	//	app.Get("/{directory:path}", CtrlGet(cldb, &wg))
 
 	app.Get("/show", CtrlShow(cldb, &wg))
-	app.Get("/del", CtrlDel(cldb, &wg))
+	app.Get("/del", CtrlDel(cldb, keymutex, &wg))
 
 	app.Post("/task", CtrlTask(cldb, &wg))
 	app.Post("/run", CtrlRun(&wg))

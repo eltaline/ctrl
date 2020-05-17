@@ -26,9 +26,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"encoding/gob"
-	//	"encoding/json"
 	"fmt"
+	"github.com/eltaline/go-waitgroup"
 	"github.com/eltaline/nutsdb"
 	"github.com/gobuffalo/uuid"
 	"github.com/kataras/iris"
@@ -47,6 +48,21 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 	return func(ctx iris.Context) {
 		defer wg.Done()
 
+		fin := make(chan bool)
+		kill := make(chan bool)
+		wcl := make(chan bool)
+
+		ctx.OnClose(func() {
+
+			select {
+			case <-fin:
+				return
+			default:
+				kill <- true
+			}
+
+		})
+
 		var err error
 
 		// Wait Group
@@ -61,8 +77,18 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 		// Shutdown
 
 		if shutdown {
+
 			ctx.StatusCode(iris.StatusInternalServerError)
+
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
+
 			return
+
 		}
 
 		// Variables
@@ -75,17 +101,65 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 		ip := ctx.RemoteAddr()
 		cip := net.ParseIP(ip)
+		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		params := ctx.URLParams()
 		length := ctx.GetHeader("Content-Length")
 
 		badhost := true
+		baduser := true
 		badip := true
+
+		user := ""
+		pass := ""
+		phsh := ""
 
 		shell := "/bin/bash"
 
+		rthreads := 0
+
 		vtimeout := uint32(28800)
+
+		if ush != "" {
+
+			mchpair := rgxpair.MatchString(ush)
+
+			if !mchpair {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | Bad authorization format", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.Writef("[ERRO] Bad authorization format | Virtual Host [%s]\n", vhost)
+					if err != nil {
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				go func() {
+					wcl <- true
+					fin <- true
+				}()
+
+				<-wcl
+
+				return
+
+			}
+
+			sha_512 := sha512.New()
+
+			user = strings.Split(ush, ":")[0]
+			pass = strings.Split(ush, ":")[1]
+
+			sha_512.Write([]byte(pass))
+			phsh = fmt.Sprintf("%x", sha_512.Sum(nil))
+
+		}
 
 		for _, Server := range config.Server {
 
@@ -93,26 +167,52 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 				badhost = false
 
-				for _, Vhost := range ipsallow {
+				if user != "" && pass != "" {
 
-					if vhost == Vhost.Vhost {
+					for _, Vhost := range ussallow {
 
-						for _, CIDR := range Vhost.CIDR {
-							_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
-							if ipnet.Contains(cip) {
-								badip = false
-								break
+						if vhost == Vhost.Vhost {
+
+							for _, PAIR := range Vhost.PAIR {
+
+								if user == PAIR.User && phsh == PAIR.Hash {
+									baduser = false
+									break
+								}
 							}
+
+							break
+
 						}
 
-						break
+					}
+
+				}
+
+				if baduser {
+
+					for _, Vhost := range ipsallow {
+
+						if vhost == Vhost.Vhost {
+
+							for _, CIDR := range Vhost.CIDR {
+								_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
+								if ipnet.Contains(cip) {
+									badip = false
+									break
+								}
+							}
+
+							break
+
+						}
 
 					}
 
 				}
 
 				shell = Server.SHELL
-
+				rthreads = Server.RTHREADS
 				vtimeout = Server.VTIMEOUT
 
 				break
@@ -136,11 +236,18 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
+
 			return
 
 		}
 
-		if badip {
+		if baduser && badip {
 
 			ctx.StatusCode(iris.StatusForbidden)
 
@@ -148,12 +255,19 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			if debugmode {
 
-				_, err = ctx.Writef("[ERRO] Not found allowed ip | Virtual Host [%s]\n", vhost)
+				_, err = ctx.Writef("[ERRO] Not found allowed user or not found allowed ip | Virtual Host [%s]\n", vhost)
 				if err != nil {
 					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
 
 			}
+
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
 
 			return
 
@@ -173,6 +287,13 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 				}
 
 			}
+
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
 
 			return
 
@@ -194,6 +315,13 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
+
 			return
 
 		}
@@ -212,6 +340,13 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 				}
 
 			}
+
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
 
 			return
 
@@ -235,88 +370,236 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
+
 			return
 
 		}
 
+		limit := 0
+
+		rc.RLock()
+		curthreads := rc.rcounter[vhost]
+		rc.RUnlock()
+
+		for {
+
+			if curthreads < rthreads {
+				limit = rthreads - curthreads
+				break
+			}
+
+			select {
+			case <-kill:
+
+				go func() {
+					wcl <- true
+					fin <- true
+				}()
+
+				<-wcl
+
+				return
+
+			default:
+
+				time.Sleep(time.Duration(5) * time.Millisecond)
+
+			}
+
+		}
+
+		if limit <= 0 {
+
+			go func() {
+				wcl <- true
+				fin <- true
+			}()
+
+			<-wcl
+
+			return
+		}
+
+		qwg := waitgroup.NewWaitGroup(limit)
+
 		for _, task := range body {
 
-			stdcode := 0
-			errcode := 0
+			prefskey := task.Key
+			preftype := task.Type
+			prefpath := task.Path
+			preflock := task.Lock
+			prefcomm := task.Command
+			preftout := task.Timeout
 
-			stdout := ""
-			stderr := ""
+			rc.Lock()
+			rc.rcounter[vhost]++
+			rc.Unlock()
 
-			if task.Key == "" || task.Type == "" || task.Path == "" || task.Lock == "" || task.Command == "" {
+			qwg.Add(func() {
 
-				ctx.StatusCode(iris.StatusBadRequest)
+				defer func() {
+					rc.Lock()
+					rc.rcounter[vhost]--
+					rc.Unlock()
+				}()
 
-				postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The body was not contains enough parameters during POST request", vhost, ip)
+				skey := prefskey
+				ftmst := time.Now().Unix()
+				ftype := preftype
+				fpath := prefpath
+				flock := preflock
+				fcomm := prefcomm
+				ftout := preftout
 
-				if debugmode {
+				stdcode := 0
+				errcode := 0
 
-					_, err = ctx.WriteString("[ERRO] The body was not contains enough parameters during POST request\n")
+				stdout := ""
+				stderr := ""
+
+				if skey == "" || ftype == "" || fpath == "" || flock == "" || fcomm == "" {
+
+					ctx.StatusCode(iris.StatusBadRequest)
+
+					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The body was not contains enough parameters during POST request", vhost, ip)
+
+					if debugmode {
+
+						_, err = ctx.WriteString("[ERRO] The body was not contains enough parameters during POST request\n")
+						if err != nil {
+							postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+						}
+
+					}
+
+					go func() {
+						wcl <- true
+						fin <- true
+					}()
+
+					<-wcl
+
+					return
+
+				}
+
+				if ftout == uint32(0) {
+					ftout = vtimeout
+				}
+
+				var cmmout bytes.Buffer
+				var cmmerr bytes.Buffer
+
+				scm := shell + " -c " + "\"cd " + fpath + " " + "&&" + " " + fcomm + "\""
+				cmm := exec.Command(shell, "-c", scm)
+
+				var rtime float64
+
+				stime := time.Now()
+
+				cmm.Stdout = &cmmout
+				cmm.Stderr = &cmmerr
+
+				interrupt := false
+
+				cwg := waitgroup.NewWaitGroup(1)
+
+				crun := make(chan bool)
+
+				cwg.Add(func() {
+
+					err = cmm.Start()
 					if err != nil {
-						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+						interrupt = true
+						errcode = 255
+						stderr = err.Error()
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
+					}
+
+					err = cmm.Wait()
+					if err != nil {
+						interrupt = true
+						errcode = 1
+						stderr = err.Error()
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
+					}
+
+					crun <- true
+
+				})
+
+				cmmt := time.After(time.Duration(int(ftout)) * time.Second)
+
+			Kill:
+
+				for {
+
+					select {
+
+					case <-crun:
+						break Kill
+					case <-kill:
+						go func() { kill <- true }()
+						_ = cmm.Process.Kill()
+						<-crun
+						break Kill
+					case <-cmmt:
+						_ = cmm.Process.Kill()
+						<-crun
+						errcode = 124
+						break Kill
+
+					default:
+
+						time.Sleep(time.Duration(5) * time.Millisecond)
+
 					}
 
 				}
 
-				return
+				cwg.Wait()
+				close(crun)
 
-			}
+				rtime = float64(time.Since(stime)) / float64(time.Millisecond)
 
-			skey := task.Key
-			ftmst := time.Now().Unix()
-			fpath := task.Path
-			flock := task.Lock
-			fcomm := task.Command
+				stdout = cmmout.String()
 
-			ftout := vtimeout
+				if !interrupt {
+					stderr = cmmerr.String()
+				}
 
-			if task.Timeout > uint32(0) {
-				ftout = task.Timeout
-			}
+				p.Key = skey
+				p.Time = ftmst
+				p.Type = ftype
+				p.Path = fpath
+				p.Lock = flock
+				p.Command = fcomm
+				p.Timeout = ftout
+				p.Stdcode = stdcode
+				p.Stdout = stdout
+				p.Errcode = errcode
+				p.Stderr = stderr
+				p.Runtime = rtime
 
-			var cmmout bytes.Buffer
-			var cmmerr bytes.Buffer
+				resp = append(resp, p)
 
-			scm := "timeout" + " " + strconv.FormatUint(uint64(ftout), 10) + " " + shell + " -c " + "\"cd " + fpath + " " + "&&" + " " +  fcomm + "\""
-			cmm := exec.Command(shell, "-c", scm)
+			})
 
-			var rtime float64
+		}
 
-			stime := time.Now()
+		qwg.Wait()
 
-			cmm.Stdout = &cmmout
-			cmm.Stderr = &cmmerr
-
-			err = cmm.Run()
-			if err != nil {
-				errcode = 1
-				postLogger.Errorf("| Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", skey, fpath, flock, scm, err)
-			}
-
-			rtime = float64(time.Since(stime)) / float64(time.Millisecond)
-
-			stdout = cmmout.String()
-			stderr = cmmerr.String()
-
-			p.Key = task.Key
-			p.Time = ftmst
-			p.Type = task.Type
-			p.Path = task.Path
-			p.Lock = task.Lock
-			p.Command = task.Command
-			p.Timeout = ftout
-			p.Stdcode = stdcode
-			p.Stdout = stdout
-			p.Errcode = errcode
-			p.Stderr = stderr
-			p.Runtime = rtime
-
-			resp = append(resp, p)
-
+		select {
+		case <-kill:
+			go func() { fin <- true }()
+		default:
+			go func() { fin <- true }()
 		}
 
 		jkeys, _ := JSONMarshal(resp, true)
@@ -367,17 +650,56 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		ip := ctx.RemoteAddr()
 		cip := net.ParseIP(ip)
+		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		params := ctx.URLParams()
 		length := ctx.GetHeader("Content-Length")
 
 		badhost := true
+		baduser := true
 		badip := true
+
+		user := ""
+		pass := ""
+		phsh := ""
 
 		vtimeout := uint32(28800)
 
 		rvbucket := ""
+
+		if ush != "" {
+
+			mchpair := rgxpair.MatchString(ush)
+
+			if !mchpair {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | Bad authorization format", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.Writef("[ERRO] Bad authorization format | Virtual Host [%s]\n", vhost)
+					if err != nil {
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				return
+
+			}
+
+			sha_512 := sha512.New()
+
+			user = strings.Split(ush, ":")[0]
+			pass = strings.Split(ush, ":")[1]
+
+			sha_512.Write([]byte(pass))
+			phsh = fmt.Sprintf("%x", sha_512.Sum(nil))
+
+		}
 
 		for _, Server := range config.Server {
 
@@ -385,26 +707,51 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				badhost = false
 
-				for _, Vhost := range ipsallow {
+				if user != "" && pass != "" {
 
-					if vhost == Vhost.Vhost {
+					for _, Vhost := range ussallow {
 
-						for _, CIDR := range Vhost.CIDR {
-							_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
-							if ipnet.Contains(cip) {
-								badip = false
-								break
+						if vhost == Vhost.Vhost {
+
+							for _, PAIR := range Vhost.PAIR {
+
+								if user == PAIR.User && phsh == PAIR.Hash {
+									baduser = false
+									break
+								}
 							}
+
+							break
+
 						}
 
-						break
+					}
+
+				}
+
+				if baduser {
+
+					for _, Vhost := range ipsallow {
+
+						if vhost == Vhost.Vhost {
+
+							for _, CIDR := range Vhost.CIDR {
+								_, ipnet, _ := net.ParseCIDR(CIDR.Addr)
+								if ipnet.Contains(cip) {
+									badip = false
+									break
+								}
+							}
+
+							break
+
+						}
 
 					}
 
 				}
 
 				vtimeout = Server.VTIMEOUT
-
 				rvbucket = "recv" + "_" + vhost + ":"
 
 				break
@@ -432,7 +779,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		}
 
-		if badip {
+		if baduser && badip {
 
 			ctx.StatusCode(iris.StatusForbidden)
 
@@ -440,7 +787,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			if debugmode {
 
-				_, err = ctx.Writef("[ERRO] Not found allowed ip | Virtual Host [%s]\n", vhost)
+				_, err = ctx.Writef("[ERRO] Not found allowed user or not found allowed ip | Virtual Host [%s]\n", vhost)
 				if err != nil {
 					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
