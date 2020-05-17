@@ -52,7 +52,7 @@ Configuring and using cTRL server
 
 Default credentials: admin:swordfish
 
-Password generation: echo -n "mypassword" | sha512sum
+Password generation: ```echo -n "mypassword" | sha512sum```
 
 In most cases it is enough to use the default configuration file. A full description of all product parameters is available here: <a href="/OPTIONS.md">Options</a>
 
