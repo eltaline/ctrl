@@ -626,6 +626,10 @@ func main() {
 
 	keymutex := mmutex.NewMMutex()
 
+	// Close Mapped Mutex
+
+	clsmutex := mmutex.NewMMutex()
+
 	// Database
 
 	dbdir = filepath.Clean(config.Global.DBDIR)
@@ -704,7 +708,7 @@ func main() {
 	app.Get("/del", CtrlDel(cldb, keymutex, &wg))
 
 	app.Post("/task", CtrlTask(cldb, &wg))
-	app.Post("/run", CtrlRun(&wg))
+	app.Post("/run", CtrlRun(clsmutex, &wg))
 
 	// Interrupt Handler
 

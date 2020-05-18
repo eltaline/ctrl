@@ -29,10 +29,11 @@ import (
 	"crypto/sha512"
 	"encoding/gob"
 	"fmt"
-	"github.com/pieterclaerhout/go-waitgroup"
+	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"github.com/gobuffalo/uuid"
 	"github.com/kataras/iris/v12"
+	"github.com/pieterclaerhout/go-waitgroup"
 	"net"
 	"os/exec"
 	"strconv"
@@ -44,22 +45,25 @@ import (
 // Post
 
 // CtrlRun : Start realtime task command or commands method
-func CtrlRun(wg *sync.WaitGroup) iris.Handler {
+func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 	return func(ctx iris.Context) {
 		defer wg.Done()
 
-		fin := make(chan bool)
 		kill := make(chan bool)
-		wcl := make(chan bool)
+		ucl := uuid.Must(uuid.NewV4())
+		rtm := time.Now().UnixNano()
+
+		cls := string(rtm) + ":" + fmt.Sprintf("%x", ucl)
 
 		ctx.OnClose(func() {
 
-			select {
-			case <-fin:
-				return
-			default:
+			if !clsmutex.IsLock(cls) {
 				kill <- true
+				close(kill)
+				return
 			}
+
+			clsmutex.UnLock(cls)
 
 		})
 
@@ -77,18 +81,9 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 		// Shutdown
 
 		if shutdown {
-
 			ctx.StatusCode(iris.StatusInternalServerError)
-
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
-
 		}
 
 		// Variables
@@ -140,13 +135,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 				}
 
-				go func() {
-					wcl <- true
-					fin <- true
-				}()
-
-				<-wcl
-
+				clsmutex.TryLock(cls)
 				return
 
 			}
@@ -236,13 +225,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -262,13 +245,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -288,13 +265,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -315,13 +286,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -341,13 +306,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -370,13 +329,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 			}
 
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 
 		}
@@ -397,13 +350,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 			select {
 			case <-kill:
 
-				go func() {
-					wcl <- true
-					fin <- true
-				}()
-
-				<-wcl
-
+				clsmutex.TryLock(cls)
 				return
 
 			default:
@@ -415,14 +362,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 		}
 
 		if limit <= 0 {
-
-			go func() {
-				wcl <- true
-				fin <- true
-			}()
-
-			<-wcl
-
+			clsmutex.TryLock(cls)
 			return
 		}
 
@@ -478,13 +418,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 					}
 
-					go func() {
-						wcl <- true
-						fin <- true
-					}()
-
-					<-wcl
-
+					clsmutex.TryLock(cls)
 					return
 
 				}
@@ -506,8 +440,6 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 				cmm.Stdout = &cmmout
 				cmm.Stderr = &cmmerr
 
-				interrupt := false
-
 				cwg := waitgroup.NewWaitGroup(1)
 
 				crun := make(chan bool)
@@ -516,7 +448,6 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 					err = cmm.Start()
 					if err != nil {
-						interrupt = true
 						errcode = 255
 						stderr = err.Error()
 						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
@@ -524,7 +455,6 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 					err = cmm.Wait()
 					if err != nil {
-						interrupt = true
 						errcode = 1
 						stderr = err.Error()
 						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
@@ -545,7 +475,6 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 					case <-crun:
 						break Kill
 					case <-kill:
-						go func() { kill <- true }()
 						_ = cmm.Process.Kill()
 						<-crun
 						break Kill
@@ -569,10 +498,7 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 				rtime = float64(time.Since(stime)) / float64(time.Millisecond)
 
 				stdout = cmmout.String()
-
-				if !interrupt {
-					stderr = cmmerr.String()
-				}
+				stderr = cmmerr.String()
 
 				p.Key = skey
 				p.Time = ftmst
@@ -595,13 +521,6 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 
 		qwg.Wait()
 
-		select {
-		case <-kill:
-			go func() { fin <- true }()
-		default:
-			go func() { fin <- true }()
-		}
-
 		jkeys, _ := JSONMarshal(resp, true)
 		allkeys := string(jkeys)
 		rbytes := []byte(allkeys)
@@ -613,6 +532,15 @@ func CtrlRun(wg *sync.WaitGroup) iris.Handler {
 		_, err = ctx.Write(rbytes)
 		if err != nil {
 			postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+		}
+
+		select {
+
+		case <-kill:
+			return
+		default:
+			clsmutex.TryLock(cls)
+
 		}
 
 	}

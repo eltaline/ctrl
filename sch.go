@@ -28,9 +28,9 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"github.com/pieterclaerhout/go-waitgroup"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
+	"github.com/pieterclaerhout/go-waitgroup"
 	"os"
 	"os/exec"
 	"time"
@@ -394,8 +394,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					cmm.Stdout = &cmmout
 					cmm.Stderr = &cmmerr
 
-					interrupt := false
-
 					cwg := waitgroup.NewWaitGroup(1)
 
 					crun := make(chan bool)
@@ -412,7 +410,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							err = cmm.Start()
 							if err != nil {
-								interrupt = true
 								errcode = 255
 								stderr = err.Error()
 								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
@@ -420,7 +417,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							err = cmm.Wait()
 							if err != nil {
-								interrupt = true
 								errcode = 1
 								stderr = err.Error()
 								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
@@ -510,10 +506,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					rtime = float64(time.Since(stime)) / float64(time.Millisecond)
 
 					stdout = cmmout.String()
-
-					if !interrupt {
-						stderr = cmmerr.String()
-					}
+					stderr = cmmerr.String()
 
 					ebuffer := new(bytes.Buffer)
 					eenc := gob.NewEncoder(ebuffer)
