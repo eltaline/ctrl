@@ -408,17 +408,9 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			if len(ftsk) == 0 {
 
-				ctx.StatusCode(iris.StatusNotFound)
-
-				getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 404 | Not Found | Url [%s]", vhost, ip, furi)
-
-				if debugmode {
-
-					_, err = ctx.WriteString("[ERRO] Not Found\n")
-					if err != nil {
-						getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
-					}
-
+				_, err = ctx.WriteString("[]")
+				if err != nil {
+					getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
 
 				return
@@ -885,17 +877,9 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 			if len(ftsk) == 0 {
 
-				ctx.StatusCode(iris.StatusNotFound)
-
-				getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 404 | Not Found | Url [%s]", vhost, ip, furi)
-
-				if debugmode {
-
-					_, err = ctx.WriteString("[ERRO] Not Found\n")
-					if err != nil {
-						getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
-					}
-
+				_, err = ctx.WriteString("[]")
+				if err != nil {
+					getLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
 				}
 
 				return
