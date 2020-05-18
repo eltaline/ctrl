@@ -84,7 +84,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
-		furi := ctx.FullRqeuestURI()
+		furi := ctx.FullRequestURI()
 		ups, _ := url.Parse(furi)
 		furi = ups.Scheme + "://" + ups.Host + ups.Path + "?" + ups.RawQuery
 
