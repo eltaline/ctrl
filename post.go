@@ -32,7 +32,7 @@ import (
 	"github.com/pieterclaerhout/go-waitgroup"
 	"github.com/eltaline/nutsdb"
 	"github.com/gobuffalo/uuid"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"net"
 	"os/exec"
 	"strconv"
