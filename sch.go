@@ -28,7 +28,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"github.com/eltaline/go-waitgroup"
+	"github.com/pieterclaerhout/go-waitgroup"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"os"

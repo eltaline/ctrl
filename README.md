@@ -186,6 +186,7 @@ Description of fields
 --------
 
 - key - an arbitrary unique identifier
+- time - task receive time
 - type - arbitrary type of task
 - path - path to change the directory before running the command
 - lock - arbitrary lock label

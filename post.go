@@ -29,7 +29,7 @@ import (
 	"crypto/sha512"
 	"encoding/gob"
 	"fmt"
-	"github.com/eltaline/go-waitgroup"
+	"github.com/pieterclaerhout/go-waitgroup"
 	"github.com/eltaline/nutsdb"
 	"github.com/gobuffalo/uuid"
 	"github.com/kataras/iris"
