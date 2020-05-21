@@ -4,10 +4,14 @@
 
 cTRL is a server written in Go language that uses a <a href=https://github.com/eltaline/nutsdb>modified</a> version of the NutsDB database, as a backend for a continuous queue of tasks and saving the result of executing commands from given tasks in command interpreters like /bin/bash on servers where this service will be used. Using cTRL, you can receive tasks via the HTTP protocol with commands for executing them on the server and limit the number of simultaneously executed tasks.
 
-Current stable version: 1.1.0
+Current stable version: 1.1.1
 ========
 
 - <a href=/CHANGELOG.md>Changelog</a>
+
+Added in version 1.1.1:
+
+- Search by type
 
 Added in version 1.1.0:
 
@@ -89,7 +93,7 @@ curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.
 Getting a task from the received queue
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=received"
 ```
 
 Getting all tasks from the received queue
@@ -101,7 +105,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=received"
 Getting a task from the working queue
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=working"
 ```
 
 Getting all tasks from the working queue
@@ -113,7 +117,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=working"
 Getting a task from the list of completed tasks
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=completed"
 ```
 
 Getting all tasks from the list of completed tasks
@@ -125,7 +129,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=completed"
 Deleting a task from the received queue
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=received"
 ```
 
 Deleting all tasks from the received queue
@@ -137,7 +141,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=received"
 Deleting a task from the working queue
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=working"
 ```
 
 Deleting all tasks from the working queue
@@ -149,7 +153,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=working"
 Deleting a task from the list of completed tasks
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=completed"
 ```
 
 Deleting all tasks from the list of completed tasks
@@ -164,8 +168,8 @@ Input format
 Description of fields
 --------
 
-- key - an arbitrary unique identifier
-- type - arbitrary type of task
+- key - an arbitrary unique identifier (colon is not allowed ":")
+- type - arbitrary type of task (colon is not allowed ":")
 - path - path to change the directory before running the command
 - lock - arbitrary lock label
 - command - command
@@ -269,6 +273,7 @@ Output of deleted tasks:
 Notes and Q&A
 --------
 
+- In key and type, colon is not allowed ":"
 - The limitation of simultaneously running tasks from queue to each virtual host is regulated by the ```vthreads``` parameter in the server configuration file or can be overriden through POST method for each type of task
 - The limitation of simultaneously running tasks in realtime to each virtual host is regulated by the ```rthreads``` parameter in the server configuration file
 - The key field, if this identifier is the same for two or more different tasks, in this case, when outputting information from the queue, you will receive information on this identifier for several tasks at once, this can be useful for grouping tasks, but they will be from the waiting queue run randomly

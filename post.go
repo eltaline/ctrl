@@ -431,6 +431,50 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 				}
 
+				kmchcln := rgxcln.MatchString(task.Key)
+
+				if kmchcln {
+
+					ctx.StatusCode(iris.StatusBadRequest)
+
+					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The key does not allow to contains colon(:) during POST request", vhost, ip)
+
+					if debugmode {
+
+						_, err = ctx.WriteString("[ERRO] The key does not allow to contains colon(:) during POST request\n")
+						if err != nil {
+							postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+						}
+
+					}
+
+					clsmutex.TryLock(cls)
+					return
+
+				}
+
+				tmchcln := rgxcln.MatchString(task.Type)
+
+				if tmchcln {
+
+					ctx.StatusCode(iris.StatusBadRequest)
+
+					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The type does not allow to contains colon(:) during POST request", vhost, ip)
+
+					if debugmode {
+
+						_, err = ctx.WriteString("[ERRO] The type does not allow to contains colon(:) during POST request\n")
+						if err != nil {
+							postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+						}
+
+					}
+
+					clsmutex.TryLock(cls)
+					return
+
+				}
+
 				if ftout == uint32(0) || ftout >= uint32(2592000) {
 					ftout = vtimeout
 				}
@@ -858,6 +902,48 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			}
 
+			kmchcln := rgxcln.MatchString(task.Key)
+
+			if kmchcln {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The key does not allow to contains colon(:) during POST request", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.WriteString("[ERRO] The key does not allow to contains colon(:) during POST request\n")
+					if err != nil {
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				return
+
+			}
+
+			tmchcln := rgxcln.MatchString(task.Type)
+
+			if tmchcln {
+
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 400 | The type does not allow to contains colon(:) during POST request", vhost, ip)
+
+				if debugmode {
+
+					_, err = ctx.WriteString("[ERRO] The type does not allow to contains colon(:) during POST request\n")
+					if err != nil {
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+					}
+
+				}
+
+				return
+
+			}
+
 			pbuffer := new(bytes.Buffer)
 			enc := gob.NewEncoder(pbuffer)
 
@@ -865,7 +951,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			ftmst := time.Now().Unix()
 
-			bkey := []byte("t:" + fmt.Sprintf("%d", ftmst) + ":" + fmt.Sprintf("%x", internal) + ":" + task.Key)
+			bkey := []byte("t:" + fmt.Sprintf("%d", ftmst) + ":" + fmt.Sprintf("%x", internal) + ":" + task.Type + ":" + task.Key)
 			skey := task.Key
 
 			ftype := task.Type

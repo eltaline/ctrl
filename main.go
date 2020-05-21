@@ -277,6 +277,7 @@ var (
 	pidfile string = "/run/ctrl/ctrl.pid"
 
 	rgxpair = regexp.MustCompile("^(.+):(.+)$")
+	rgxcln  = regexp.MustCompile(":")
 )
 
 // Init Function
@@ -285,7 +286,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.1.0"
+	var version string = "1.1.1"
 	var vprint bool = false
 	var help bool = false
 

@@ -5,7 +5,7 @@ if [ -z `getent group ctrl` ]; then
 fi
 
 if [ -z `getent passwd ctrl` ]; then
-	useradd ctrl -g ctrl 
+	useradd ctrl -g ctrl -s /bin/sh
 fi
 
 install --mode=755 --owner=ctrl --group=ctrl --directory /var/lib/ctrl

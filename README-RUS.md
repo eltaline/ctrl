@@ -2,10 +2,14 @@
 
 cTRL это сервер написанный на языке Go, использующий <a href=https://github.com/eltaline/nutsdb>модифицированную</a> версию NutsDB базы, как бекенд для непрерывной очереди задач и сохранения результата исполнения команд из заданных задач в командных интерпретаторах типа /bin/bash на серверах, где данный сервис будет использоваться. При помощи cTRL можно получать через HTTP протокол задачи с командами для их исполнения на сервере и ограничивать количество одновременно исполняемых задач.
 
-Текущая стабильная версия: 1.1.0
+Текущая стабильная версия: 1.1.1
 ========
 
 - <a href=/CHANGELOG-RUS.md>Changelog</a>
+
+Добавлено в версии 1.1.1:
+
+- Поиск по типу
 
 Добавлено в версии 1.1.0:
 
@@ -87,7 +91,7 @@ curl -X POST -H "Auth: login:pass" -H "Content-Type: application/json" -d @task.
 Получение задачи из очереди ожидания
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=received"
 ```
 
 Получение всех задач из очереди ожидания
@@ -99,7 +103,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=received"
 Получение задачи из рабочей очереди
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=working"
 ```
 
 Получение всех задач из рабочей очереди
@@ -111,7 +115,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=working"
 Получение задачи из списка завершенных задач
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/show?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=completed"
 ```
 
 Получение всех задач из списка завершенных задач
@@ -123,7 +127,7 @@ curl -H "Auth: login:pass" "http://localhost/show?queue=completed"
 Удаление задачи из очереди ожидания
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=received"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=received"
 ```
 
 Удаление всех задач из очереди ожидания
@@ -135,7 +139,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=received"
 Удаление задачи из рабочей очереди
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=working"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=working"
 ```
 
 Удаление всех задач из рабочей очереди
@@ -147,7 +151,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=working"
 Удаление задачи из списка завершенных задач
 
 ```bash
-curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&queue=completed"
+curl -H "Auth: login:pass" "http://localhost/del?key=777a0d24-289e-4615-a439-0bd4efab6103&type=mytype&queue=completed"
 ```
 
 Удаление всех задач из списка завершенных задач
@@ -162,8 +166,8 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 Описание полей
 --------
 
-- key - произвольный уникальный идентификатор
-- type - произвольный тип задачи
+- key - произвольный уникальный идентификатор (не допускается использовать двоеточие ":")
+- type - произвольный тип задачи (не допускается использовать двоеточие ":")
 - path - путь для смены директории перед запуском команды
 - lock - произвольная метка блокировки
 - command - команда
@@ -267,6 +271,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 Примечания и Q&A
 --------
 
+- В ключе и типе не допускается использовать двоеточие ":"
 - Ограничение одновременно запущенных задач из очереди на каждый виртуальный хост регулируется посредством параметра vthreads в конфигурационном файле сервера или может быть переопределено через метод POST для каждого типа задачи
 - Ограничение одновременно запущенных задач в реальном времени на каждый виртуальный хост регулируется посредством параметра rthreads в конфигурационном файле сервера
 - Поле key, если данный идентификатор будет одинаковым для двух и более разных задач, в таком случае при выводе информации из очереди вы будете получать по данному идентификатору информацию сразу по нескольким задачам, это может быть полезно для группировки задач, но из очереди ожидания они будут выполняться в произвольном порядке

@@ -84,6 +84,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		key := ctx.URLParam("key")
+		ttype := ctx.URLParam("type")
 		queue := ctx.URLParam("queue")
 
 		params := ctx.URLParams()
@@ -250,7 +251,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		}
 
-		if queue != "" || (queue != "" && key != "") {
+		if queue != "" {
 
 			cerr := cldb.View(func(tx *nutsdb.Tx) error {
 
@@ -258,10 +259,64 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				var tasks nutsdb.Entries
 
-				rgxkey := "(.+" + key + ")$"
+				rgxkey := "(.+)"
 
 				switch {
+
+				case key != "" && ttype != "" && queue == "received":
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case key != "" && ttype != "" && queue == "working":
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case key != "" && ttype != "" && queue == "completed":
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
 				case key != "" && queue == "received":
+
+					rgxkey = "(.+" + ":" + key + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
 					if tasks == nil {
@@ -277,6 +332,9 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 					}
 
 				case key != "" && queue == "working":
+
+					rgxkey = "(.+" + ":" + key + ")$"
+
 					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
 
 					if tasks == nil {
@@ -292,6 +350,62 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 					}
 
 				case key != "" && queue == "completed":
+
+					rgxkey = "(.+" + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "received":
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "working":
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "completed":
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+
 					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
 
 					if tasks == nil {
@@ -438,7 +552,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			for _, task := range ftsk {
 
-				spk := strings.Split(string(task.Key), ":")[3]
+				spk := strings.Split(string(task.Key), ":")[4]
 
 				p.Key = spk
 				p.Time = task.Time
@@ -542,6 +656,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
 		key := ctx.URLParam("key")
+		ttype := ctx.URLParam("type")
 		queue := ctx.URLParam("queue")
 
 		params := ctx.URLParams()
@@ -716,12 +831,73 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 				var tasks nutsdb.Entries
 
-				rgxkey := "(.+" + key + ")$"
+				rgxkey := "(.+)"
 
 				switch {
+				case key != "" && ttype != "" && queue == "received":
+
+					bucket = rvbucket
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case key != "" && ttype != "" && queue == "working":
+
+					bucket = wvbucket
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case key != "" && ttype != "" && queue == "completed":
+
+					bucket = fvbucket
+
+					rgxkey = "(.+" + ttype + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
 				case key != "" && queue == "received":
 
 					bucket = rvbucket
+
+					rgxkey = "(.+" + ":" + key + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
 					if tasks == nil {
@@ -740,6 +916,8 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 					bucket = wvbucket
 
+					rgxkey = "(.+" + ":" + key + ")$"
+
 					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
 
 					if tasks == nil {
@@ -757,6 +935,67 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 				case key != "" && queue == "completed":
 
 					bucket = fvbucket
+
+					rgxkey = "(.+" + ":" + key + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "received":
+
+					bucket = rvbucket
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "working":
+
+					bucket = wvbucket
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
+
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+				case ttype != "" && queue == "completed":
+
+					bucket = fvbucket
+
+					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
 
@@ -917,7 +1156,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 				delerr := ""
 
-				spk := strings.Split(string(task.Key), ":")[3]
+				spk := strings.Split(string(task.Key), ":")[4]
 
 				err = NDBDelete(cldb, bucket, task.Key)
 				if err != nil {

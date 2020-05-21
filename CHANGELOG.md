@@ -1,3 +1,10 @@
+Version: 1.1.1
+========
+
+Added in version 1.1.1:
+
+- Search by type
+
 Version: 1.1.0
 ========
 
