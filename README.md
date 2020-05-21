@@ -176,6 +176,8 @@ Description of fields
 - repeaterr - enumeration of errors that require the repeated execution of a task
 - repeatcnt - the number of task reruns in case of any error
 
+Fields ```threads/ttltime/interval/repeaterr/repeatcnt``` are relevant only for tasks queued
+
 Examples of setting tasks
 --------
 
