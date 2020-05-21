@@ -49,6 +49,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 	return func(ctx iris.Context) {
 		defer wg.Done()
 
+		ikill := false
+
 		kill := make(chan bool)
 		ucl := uuid.Must(uuid.NewV4())
 		rtm := time.Now().UnixNano()
@@ -56,6 +58,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 		cls := string(rtm) + ":" + fmt.Sprintf("%x", ucl)
 
 		ctx.OnClose(func() {
+
+			ikill = true
 
 			if !clsmutex.IsLock(cls) {
 				kill <- true
@@ -201,7 +205,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				}
 
 				shell = Server.SHELL
-				rthreads = Server.RTHREADS
+				rthreads = int(Server.RTHREADS)
 				vtimeout = Server.VTIMEOUT
 
 				break
@@ -381,13 +385,9 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 			rc.rcounter[vhost]++
 			rc.Unlock()
 
-			qwg.Add(func() {
+			qwait := make(chan bool)
 
-				defer func() {
-					rc.Lock()
-					rc.rcounter[vhost]--
-					rc.Unlock()
-				}()
+			qwg.Add(func() {
 
 				skey := prefskey
 				ftmst := time.Now().Unix()
@@ -396,6 +396,14 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				flock := preflock
 				fcomm := prefcomm
 				ftout := preftout
+
+				qwait <- true
+
+				defer func() {
+					rc.Lock()
+					rc.rcounter[vhost]--
+					rc.Unlock()
+				}()
 
 				stdcode := 0
 				errcode := 0
@@ -423,7 +431,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 				}
 
-				if ftout == uint32(0) {
+				if ftout == uint32(0) || ftout >= uint32(2592000) {
 					ftout = vtimeout
 				}
 
@@ -469,6 +477,10 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 			Kill:
 
 				for {
+
+					if ikill {
+						_ = cmm.Process.Kill()
+					}
 
 					select {
 
@@ -516,6 +528,9 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				resp = append(resp, p)
 
 			})
+
+			<-qwait
+			close(qwait)
 
 		}
 
@@ -592,7 +607,12 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		pass := ""
 		phsh := ""
 
+		vthreads := uint32(1)
 		vtimeout := uint32(28800)
+		vttltime := uint32(86400)
+		vinterval := uint32(0)
+		var vrepeaterr []string
+		vrepeatcnt := uint32(0)
 
 		rvbucket := ""
 
@@ -679,7 +699,12 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				}
 
+				vthreads = Server.VTHREADS
 				vtimeout = Server.VTIMEOUT
+				vttltime = Server.VTTLTIME
+				vinterval = Server.VINTERVAL
+				vrepeaterr = Server.VREPEATERR
+				vrepeatcnt = Server.VREPEATCNT
 				rvbucket = "recv" + "_" + vhost + ":"
 
 				break
@@ -847,25 +872,54 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 			fpath := task.Path
 			flock := task.Lock
 			fcomm := task.Command
-
+			fthreads := vthreads
 			ftout := vtimeout
+			fttl := vttltime
+			fint := vinterval
+			frerr := vrepeaterr
+			frcnt := vrepeatcnt
 
-			if task.Timeout > uint32(0) {
+			if task.Threads > uint32(0) && task.Threads <= uint32(4096) {
+				fthreads = task.Threads
+			}
+
+			if task.Timeout > uint32(0) && task.Timeout <= uint32(2592000) {
 				ftout = task.Timeout
 			}
 
+			if task.Ttltime > uint32(0) && task.Ttltime <= uint32(2592000) {
+				fttl = task.Ttltime
+			}
+
+			if task.Interval > uint32(0) && task.Interval <= uint32(60) {
+				fint = task.Interval
+			}
+
+			if len(task.Repeaterr) > 0 {
+				frerr = task.Repeaterr
+			}
+
+			if task.Repeatcnt > uint32(0) && task.Repeatcnt <= uint32(1000) {
+				frcnt = task.Repeatcnt
+			}
+
 			etsk := &RawTask{
-				Time:    ftmst,
-				Type:    ftype,
-				Path:    fpath,
-				Lock:    flock,
-				Command: fcomm,
-				Timeout: ftout,
-				Stdcode: stdcode,
-				Stdout:  stdout,
-				Errcode: errcode,
-				Stderr:  stderr,
-				Runtime: float64(0),
+				Time:      ftmst,
+				Type:      ftype,
+				Path:      fpath,
+				Lock:      flock,
+				Command:   fcomm,
+				Threads:   fthreads,
+				Timeout:   ftout,
+				Ttltime:   fttl,
+				Interval:  fint,
+				Repeaterr: frerr,
+				Repeatcnt: frcnt,
+				Stdcode:   stdcode,
+				Stdout:    stdout,
+				Errcode:   errcode,
+				Stderr:    stderr,
+				Runtime:   float64(0),
 			}
 
 			err = enc.Encode(etsk)

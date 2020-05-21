@@ -1,3 +1,17 @@
+Version: 1.1.0
+========
+
+Added in version 1.1.0:
+
+- Manual control of the parameters ```vthreads/vtimeout/vttltime/vinterval/vrepeaterr/vrepeatcnt``` through the POST method
+- Setting the thread limit for a specific type of task
+- Parsing errors and automatic task completion
+- Updated documentation
+
+Fixed in version 1.1.0:
+
+- Minor bug fixes
+
 Version: 1.0.0
 ========
 

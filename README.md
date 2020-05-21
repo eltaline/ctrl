@@ -1,3 +1,5 @@
+<img src="/images/logo.png" alt="cTRL Logo"/>
+
 Документация на русском: https://github.com/eltaline/ctrl/blob/master/README-RUS.md
 
 cTRL is a server written in Go language that uses a <a href=https://github.com/eltaline/nutsdb>modified</a> version of the NutsDB database, as a backend for a continuous queue of tasks and saving the result of executing commands from given tasks in command interpreters like /bin/bash on servers where this service will be used. Using cTRL, you can receive tasks via the HTTP protocol with commands for executing them on the server and limit the number of simultaneously executed tasks.
@@ -6,6 +8,17 @@ Current stable version: 1.0.0
 ========
 
 - <a href=/CHANGELOG.md>Changelog</a>
+
+Added in version 1.1.0:
+
+- Manual control of the parameters ```vthreads/vtimeout/vttltime/vinterval/vrepeaterr/vrepeatcnt``` through the POST method
+- Setting the thread limit for a specific type of task
+- Parsing errors and automatic task completion
+- Updated documentation
+
+Fixed in version 1.1.0:
+
+- Minor bug fixes
 
 Features
 ========
@@ -156,12 +169,17 @@ Description of fields
 - path - path to change the directory before running the command
 - lock - arbitrary lock label
 - command - command
+- threads - the number of threads for a particular type of task
 - timeout - timeout
+- ttltime - task lifetime in completed queue
+- interval - the interval between starting tasks
+- repeaterr - enumeration of errors that require the repeated execution of a task
+- repeatcnt - the number of task reruns in case of any error
 
 Examples of setting tasks
 --------
 
-Example for one task:
+Example for one task through /run:
 
 ```json
 [
@@ -169,13 +187,31 @@ Example for one task:
 ]
 ```
 
-Example for a task list:
+Example for a task list through /run:
 
 ```json
 [
 {"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15},
 {"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15},
 {"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15}
+]
+```
+
+Example for one task through /task:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3}
+]
+```
+
+Example for a task list through /task:
+
+```json
+[
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3}
 ]
 ```
 
@@ -191,7 +227,12 @@ Description of fields
 - path - path to change the directory before running the command
 - lock - arbitrary lock label
 - command - command
+- threads - the number of threads for a particular type of task
 - timeout - timeout
+- ttltime - task lifetime in completed queue
+- interval - the interval between starting tasks
+- repeaterr - enumeration of errors that require the repeated execution of a task
+- repeatcnt - the number of task reruns in case of any error
 - stdcode - not used at the moment
 - stdout - standard output
 - errcode - error code
@@ -207,9 +248,9 @@ Output of completed tasks:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
 ]
 ```
 
@@ -217,16 +258,16 @@ Output of deleted tasks:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","timeout":15,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","timeout":15,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","timeout":15,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
 ]
 ```
 
 Notes and Q&A
 --------
 
-- The limitation of simultaneously running tasks from queue to each virtual host is regulated by the ```vthreads``` parameter in the server configuration file
+- The limitation of simultaneously running tasks from queue to each virtual host is regulated by the ```vthreads``` parameter in the server configuration file or can be overriden through POST method for each type of task
 - The limitation of simultaneously running tasks in realtime to each virtual host is regulated by the ```rthreads``` parameter in the server configuration file
 - The key field, if this identifier is the same for two or more different tasks, in this case, when outputting information from the queue, you will receive information on this identifier for several tasks at once, this can be useful for grouping tasks, but they will be from the waiting queue run randomly
 - The type and lock fields, if they are assigned to two or more different tasks, are absolutely identical, in which case the server will perform these tasks from the wait queue in an arbitrary order, but only in turn
@@ -244,7 +285,6 @@ errcode
 - 1 (any error)
 - 124 (timeout)
 - 255 (failed to start command)
-- shell`s exit statuses available in stderr field
 
 delcode
 --------

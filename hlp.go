@@ -56,6 +56,18 @@ func RBInt(i int, min int, max int) bool {
 
 }
 
+// RBUint : check uint32 acceptable range function and then return true or false
+func RBUint(i uint32, min uint32, max uint32) bool {
+
+	switch {
+	case i >= min && i <= max:
+		return true
+	default:
+		return false
+	}
+
+}
+
 // Check : if received value is false, then run DoExit function
 func Check(bvar bool, sec string, name string, val string, perm string, ferr func(string, string, string, string)) {
 

@@ -79,16 +79,19 @@ type global struct {
 }
 
 type server struct {
-	HOST     string
-	SSLCRT   string
-	SSLKEY   string
-	USSALLOW string
-	IPSALLOW string
-	SHELL    string
-	RTHREADS int
-	VTHREADS int
-	VTIMEOUT uint32
-	VTTLTIME uint32
+	HOST       string
+	SSLCRT     string
+	SSLKEY     string
+	USSALLOW   string
+	IPSALLOW   string
+	SHELL      string
+	RTHREADS   uint32
+	VTHREADS   uint32
+	VTIMEOUT   uint32
+	VTTLTIME   uint32
+	VINTERVAL  uint32
+	VREPEATERR []string
+	VREPEATCNT uint32
 }
 
 // UssAllow : type for key and slice pairs of a virtual host and user/hash allowable pairs
@@ -114,77 +117,102 @@ type strCIDR struct {
 
 // GetTask : type task for get video tasks
 type GetTask struct {
-	Key     string  `json:"key"`
-	Time    int64   `json:"time"`
-	Type    string  `json:"type"`
-	Path    string  `json:"path"`
-	Lock    string  `json:"lock"`
-	Command string  `json:"command"`
-	Timeout uint32  `json:"timeout"`
-	Stdcode int     `json:"stdcode"`
-	Stdout  string  `json:"stdout"`
-	Errcode int     `json:"errcode"`
-	Stderr  string  `json:"stderr"`
-	Runtime float64 `json:"runtime"`
+	Key       string   `json:"key"`
+	Time      int64    `json:"time"`
+	Type      string   `json:"type"`
+	Path      string   `json:"path"`
+	Lock      string   `json:"lock"`
+	Command   string   `json:"command"`
+	Threads   uint32   `json:"threads"`
+	Timeout   uint32   `json:"timeout"`
+	Ttltime   uint32   `json:"ttltime"`
+	Interval  uint32   `json:"interval"`
+	Repeaterr []string `json:"repeaterr"`
+	Repeatcnt uint32   `json:"repeatcnt"`
+	Stdcode   int      `json:"stdcode"`
+	Stdout    string   `json:"stdout"`
+	Errcode   int      `json:"errcode"`
+	Stderr    string   `json:"stderr"`
+	Runtime   float64  `json:"runtime"`
 }
 
 // PostTask : type task for post video tasks
 type PostTask struct {
-	Key     string `json:"key"`
-	Type    string `json:"type"`
-	Path    string `json:"path"`
-	Lock    string `json:"lock"`
-	Command string `json:"command"`
-	Timeout uint32 `json:"timeout"`
+	Key       string   `json:"key"`
+	Type      string   `json:"type"`
+	Path      string   `json:"path"`
+	Lock      string   `json:"lock"`
+	Command   string   `json:"command"`
+	Threads   uint32   `json:"threads"`
+	Timeout   uint32   `json:"timeout"`
+	Ttltime   uint32   `json:"ttltime"`
+	Interval  uint32   `json:"interval"`
+	Repeaterr []string `json:"repeaterr"`
+	Repeatcnt uint32   `json:"repeatcnt"`
 }
 
 // DelTask : type task for delete video tasks
 type DelTask struct {
-	Key     string  `json:"key"`
-	Time    int64   `json:"time"`
-	Type    string  `json:"type"`
-	Path    string  `json:"path"`
-	Lock    string  `json:"lock"`
-	Command string  `json:"command"`
-	Timeout uint32  `json:"timeout"`
-	Stdcode int     `json:"stdcode"`
-	Stdout  string  `json:"stdout"`
-	Errcode int     `json:"errcode"`
-	Stderr  string  `json:"stderr"`
-	Runtime float64 `json:"runtime"`
-	Delcode int     `json:"delcode"`
-	Delerr  string  `json:"delerr"`
+	Key       string   `json:"key"`
+	Time      int64    `json:"time"`
+	Type      string   `json:"type"`
+	Path      string   `json:"path"`
+	Lock      string   `json:"lock"`
+	Command   string   `json:"command"`
+	Threads   uint32   `json:"threads"`
+	Timeout   uint32   `json:"timeout"`
+	Ttltime   uint32   `json:"ttltime"`
+	Interval  uint32   `json:"interval"`
+	Repeaterr []string `json:"repeaterr"`
+	Repeatcnt uint32   `json:"repeatcnt"`
+	Stdcode   int      `json:"stdcode"`
+	Stdout    string   `json:"stdout"`
+	Errcode   int      `json:"errcode"`
+	Stderr    string   `json:"stderr"`
+	Runtime   float64  `json:"runtime"`
+	Delcode   int      `json:"delcode"`
+	Delerr    string   `json:"delerr"`
 }
 
 // RawTask : raw type task for video tasks
 type RawTask struct {
-	Time    int64
-	Type    string
-	Path    string
-	Lock    string
-	Command string
-	Timeout uint32
-	Stdcode int
-	Stdout  string
-	Errcode int
-	Stderr  string
-	Runtime float64
+	Time      int64
+	Type      string
+	Path      string
+	Lock      string
+	Command   string
+	Threads   uint32
+	Timeout   uint32
+	Ttltime   uint32
+	Interval  uint32
+	Repeaterr []string
+	Repeatcnt uint32
+	Stdcode   int
+	Stdout    string
+	Errcode   int
+	Stderr    string
+	Runtime   float64
 }
 
 // FullTask : full type task with key for video tasks
 type FullTask struct {
-	Key     []byte
-	Time    int64
-	Type    string
-	Path    string
-	Lock    string
-	Command string
-	Timeout uint32
-	Stdcode int
-	Stdout  string
-	Errcode int
-	Stderr  string
-	Runtime float64
+	Key       []byte
+	Time      int64
+	Type      string
+	Path      string
+	Lock      string
+	Command   string
+	Threads   uint32
+	Timeout   uint32
+	Ttltime   uint32
+	Interval  uint32
+	Repeaterr []string
+	Repeatcnt uint32
+	Stdcode   int
+	Stdout    string
+	Errcode   int
+	Stderr    string
+	Runtime   float64
 }
 
 // ResetTask : reset type task with key only
@@ -238,6 +266,11 @@ var (
 		rcounter map[string]int
 	}{rcounter: make(map[string]int)}
 
+	rcnt = struct {
+		sync.RWMutex
+		trycounter map[string]int
+	}{trycounter: make(map[string]int)}
+
 	logdir  string = "/var/log/ctrl"
 	logmode os.FileMode
 
@@ -252,7 +285,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.0.0"
+	var version string = "1.1.0"
 	var vprint bool = false
 	var help bool = false
 
@@ -521,17 +554,23 @@ func init() {
 		mchshell := rgxshell.MatchString(Server.SHELL)
 		Check(mchshell, section, "shell", Server.SHELL, "ex. /bin/bash", DoExit)
 
-		mchrthreads := RBInt(Server.RTHREADS, 1, 4096)
+		mchrthreads := RBUint(Server.RTHREADS, 1, 4096)
 		Check(mchrthreads, section, "rthreads", fmt.Sprintf("%d", Server.RTHREADS), "from 1 to 4096", DoExit)
 
-		mchvthreads := RBInt(Server.VTHREADS, 1, 4096)
+		mchvthreads := RBUint(Server.VTHREADS, 1, 4096)
 		Check(mchvthreads, section, "vthreads", fmt.Sprintf("%d", Server.VTHREADS), "from 1 to 4096", DoExit)
 
-		mchvtimeout := RBInt(int(Server.VTIMEOUT), 1, 2592000)
+		mchvtimeout := RBUint(Server.VTIMEOUT, 1, 2592000)
 		Check(mchvtimeout, section, "vtimeout", fmt.Sprintf("%d", Server.VTIMEOUT), "from 1 to 2592000", DoExit)
 
-		mchvttltime := RBInt(int(Server.VTTLTIME), 1, 2592000)
+		mchvttltime := RBUint(Server.VTTLTIME, 1, 2592000)
 		Check(mchvttltime, section, "vttltime", fmt.Sprintf("%d", Server.VTTLTIME), "from 1 to 2592000", DoExit)
+
+		mchvinterval := RBUint(Server.VINTERVAL, 0, 60)
+		Check(mchvinterval, section, "vinterval", fmt.Sprintf("%d", Server.VINTERVAL), "from 0 to 60", DoExit)
+
+		mchvrepeatcnt := RBUint(Server.VREPEATCNT, 0, 1000)
+		Check(mchvrepeatcnt, section, "vrepeatcnt", fmt.Sprintf("%d", Server.VREPEATCNT), "from 0 to 1000", DoExit)
 
 		// Output Important Server Configuration Options
 
@@ -540,6 +579,8 @@ func init() {
 		appLogger.Warnf("| Host [%s] | Scheduler Task Threads Count [%d]", Server.HOST, Server.VTHREADS)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Timeout Seconds [%d]", Server.HOST, Server.VTIMEOUT)
 		appLogger.Warnf("| Host [%s] | Scheduler Task TTL Seconds [%d]", Server.HOST, Server.VTTLTIME)
+		appLogger.Warnf("| Host [%s] | Scheduler Task Interval Seconds [%d]", Server.HOST, Server.VINTERVAL)
+		appLogger.Warnf("| Host [%s] | Scheduler Task Repeat Tries [%d]", Server.HOST, Server.VREPEATCNT)
 
 	}
 
@@ -702,13 +743,11 @@ func main() {
 
 	// Web Routing
 
-	//	app.Get("/{directory:path}", CtrlGet(cldb, &wg))
-
 	app.Get("/show", CtrlShow(cldb, &wg))
 	app.Get("/del", CtrlDel(cldb, keymutex, &wg))
 
-	app.Post("/task", CtrlTask(cldb, &wg))
 	app.Post("/run", CtrlRun(clsmutex, &wg))
+	app.Post("/task", CtrlTask(cldb, &wg))
 
 	// Interrupt Handler
 

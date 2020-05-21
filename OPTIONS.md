@@ -176,26 +176,47 @@ rthreads
 - **Description:** Maximum number of concurrently running parallel tasks in real time.
 - **Default:** 8
 - **Values:** 1-4096
-- **Type:** int
+- **Type:** uint32
 - **Section:** [server.name]
 
 vthreads
 - **Description:** Maximum number of concurrently running parallel tasks in queue mode.
 - **Default:** 8
 - **Values:** 1-4096
-- **Type:** int
+- **Type:** uint32
 - **Section:** [server.name]
 
 vtimeout
-- **Description:** This sets default timeout for running tasks, if timeout is already not set in task.
+- **Description:** This sets default timeout for running tasks, if timeout is already not set in task (seconds).
 - **Default:** 28800
 - **Values:** 1-2592000
 - **Type:** uint32
 - **Section:** [server.name]
 
 vttltime
-- **Description:** This sets default time to live for completed tasks in database.
+- **Description:** This sets default lifetime for completed tasks in the database (seconds).
 - **Default:** 86400
 - **Values:** 1-2592000
+- **Type:** uint32
+- **Section:** [server.name]
+
+vinterval
+- **Description:** This sets default interval between starting tasks (seconds).
+- **Default:** 0
+- **Values:** 0-60
+- **Type:** uint32
+- **Section:** [server.name]
+
+vrepeaterr
+- **Description:** This sets default parsing of errors when performing tasks; you can specify several errors in which repetitions of task execution will work.
+- **Default:**
+- **Values:**
+- **Type:** []string
+- **Section:** [server.name]
+
+vrepeatcnt
+- **Description:** This sets default number of task re-starts if one of the errors specified in the vrepeaterr parameter is received.
+- **Default:** 0
+- **Values:** 0-1000
 - **Type:** uint32
 - **Section:** [server.name]

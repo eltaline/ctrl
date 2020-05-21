@@ -34,7 +34,6 @@ import (
 	"github.com/eltaline/nutsdb"
 	"github.com/kataras/iris/v12"
 	"net"
-	"net/url"
 	"strings"
 	"sync"
 )
@@ -83,10 +82,6 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		cip := net.ParseIP(ip)
 		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
-
-		furi := ctx.FullRequestURI()
-		ups, _ := url.Parse(furi)
-		furi = ups.Scheme + "://" + ups.Host + ups.Path + "?" + ups.RawQuery
 
 		key := ctx.URLParam("key")
 		queue := ctx.URLParam("queue")
@@ -391,7 +386,12 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 					f.Path = rt.Path
 					f.Lock = rt.Lock
 					f.Command = rt.Command
+					f.Threads = rt.Threads
 					f.Timeout = rt.Timeout
+					f.Ttltime = rt.Ttltime
+					f.Interval = rt.Interval
+					f.Repeaterr = rt.Repeaterr
+					f.Repeatcnt = rt.Repeatcnt
 					f.Stdcode = rt.Stdcode
 					f.Stdout = rt.Stdout
 					f.Errcode = rt.Errcode
@@ -446,7 +446,12 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				p.Path = task.Path
 				p.Lock = task.Lock
 				p.Command = task.Command
+				p.Threads = task.Threads
 				p.Timeout = task.Timeout
+				p.Ttltime = task.Ttltime
+				p.Interval = task.Interval
+				p.Repeaterr = task.Repeaterr
+				p.Repeatcnt = task.Repeatcnt
 				p.Stdcode = task.Stdcode
 				p.Stdout = task.Stdout
 				p.Errcode = task.Errcode
@@ -536,10 +541,6 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 		ush := ctx.GetHeader("Auth")
 		vhost := strings.Split(ctx.Host(), ":")[0]
 
-		furi := ctx.FullRequestURI()
-		ups, _ := url.Parse(furi)
-		furi = ups.Scheme + "://" + ups.Host + ups.Path + "?" + ups.RawQuery
-
 		key := ctx.URLParam("key")
 		queue := ctx.URLParam("queue")
 
@@ -860,7 +861,12 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 					f.Path = rt.Path
 					f.Lock = rt.Lock
 					f.Command = rt.Command
+					f.Threads = rt.Threads
 					f.Timeout = rt.Timeout
+					f.Ttltime = rt.Ttltime
+					f.Interval = rt.Interval
+					f.Repeaterr = rt.Repeaterr
+					f.Repeatcnt = rt.Repeatcnt
 					f.Stdcode = rt.Stdcode
 					f.Stdout = rt.Stdout
 					f.Errcode = rt.Errcode
@@ -938,7 +944,12 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 				d.Path = task.Path
 				d.Lock = task.Lock
 				d.Command = task.Command
+				d.Threads = task.Threads
 				d.Timeout = task.Timeout
+				d.Ttltime = task.Ttltime
+				d.Interval = task.Interval
+				d.Repeaterr = task.Repeaterr
+				d.Repeatcnt = task.Repeatcnt
 				d.Stdcode = task.Stdcode
 				d.Stdout = task.Stdout
 				d.Errcode = task.Errcode
