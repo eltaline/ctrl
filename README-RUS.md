@@ -2,10 +2,15 @@
 
 cTRL это сервер написанный на языке Go, использующий <a href=https://github.com/eltaline/nutsdb>модифицированную</a> версию NutsDB базы, как бекенд для непрерывной очереди задач и сохранения результата исполнения команд из заданных задач в командных интерпретаторах типа /bin/bash на серверах, где данный сервис будет использоваться. При помощи cTRL можно получать через HTTP протокол задачи с командами для их исполнения на сервере и ограничивать количество одновременно исполняемых задач.
 
-Текущая стабильная версия: 1.1.2
+Текущая стабильная версия: 1.1.3
 ========
 
 - <a href=/CHANGELOG-RUS.md>Changelog</a>
+
+Добавлено в версии 1.1.3:
+
+- Поле replace для /task
+- Параметр ```vreplace```
 
 Исправлено в версии 1.1.2:
 
@@ -180,7 +185,8 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 - ttltime - время жизни задачи в completed очереди
 - interval - интервал между запуском задач
 - repeaterr - перечисление ошибок, которые требуют повторного выполнения задачи
-- repeatcnt - количество повторных запусков задачи в случае совпадения с любой ошибкой
+- repeatcnt - количество повторных запусков задачи в случае совпадения с любой ошибкой из параметра ```repeaterr```
+- replace - перезапись одинаковой задачи с одинаковым ключем и одинаковым типом в очереди received
 
 Поля ```threads/ttltime/interval/repeaterr/repeatcnt``` актуальны только для задач установленных в очередь
 
@@ -209,7 +215,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false}
 ]
 ```
 
@@ -217,9 +223,9 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false}
 ]
 ```
 
@@ -240,7 +246,8 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 - ttltime - время жизни задачи в completed очереди
 - interval - интервал между запуском задач
 - repeaterr - перечисление ошибок, которые требуют повторного выполнения задачи
-- repeatcnt - количество повторных запусков задачи в случае совпадения с любой ошибкой
+- repeatcnt - количество повторных запусков задачи в случае совпадения с любой ошибкой из параметра ```repeaterr```
+- replace - перезапись одинаковой задачи с одинаковым ключем и одинаковым типом в очереди received
 - stdcode - не используется на данный момент
 - stdout - стандартный вывод
 - errcode - код ошибки
@@ -256,9 +263,9 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
 ]
 ```
 
@@ -266,9 +273,9 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
 ]
 ```
 

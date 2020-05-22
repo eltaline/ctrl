@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
@@ -635,6 +636,12 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		// Variables
 
+		errempty := errors.New("bucket is empty")
+		errscans := errors.New("prefix scans not found")
+		errsearchscans := errors.New("prefix and search scans not found")
+
+		bprefix := []byte("t:")
+
 		var body []PostTask
 
 		// IP Client
@@ -661,6 +668,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		vinterval := uint32(0)
 		var vrepeaterr []string
 		vrepeatcnt := uint32(0)
+		vreplace := false
 
 		rvbucket := ""
 
@@ -753,6 +761,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				vinterval = Server.VINTERVAL
 				vrepeaterr = Server.VREPEATERR
 				vrepeatcnt = Server.VREPEATCNT
+				vreplace = Server.VREPLACE
 				rvbucket = "recv" + "_" + vhost + ":"
 
 				break
@@ -880,6 +889,9 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 		for _, task := range body {
 
+			var ftsk []FullTask
+			var f FullTask
+
 			stdcode := 0
 			errcode := 0
 
@@ -967,6 +979,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 			fint := vinterval
 			frerr := vrepeaterr
 			frcnt := vrepeatcnt
+			frepl := vreplace
 
 			if task.Threads > uint32(0) && task.Threads <= uint32(4096) {
 				fthreads = task.Threads
@@ -1004,6 +1017,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				Interval:  fint,
 				Repeaterr: frerr,
 				Repeatcnt: frcnt,
+				Replace:   frepl,
 				Stdcode:   stdcode,
 				Stdout:    stdout,
 				Errcode:   errcode,
@@ -1028,6 +1042,70 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				}
 
 				return
+
+			}
+
+			if frepl {
+
+				cerr := cldb.View(func(tx *nutsdb.Tx) error {
+
+					var err error
+
+					var tasks nutsdb.Entries
+
+					rgxkey := "(.+" + ftype + ":" + skey + ")$"
+
+					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
+					if tasks == nil {
+						return nil
+					}
+
+					if err != nil && (err.Error() == errempty.Error() || err.Error() == errscans.Error() || err.Error() == errsearchscans.Error()) {
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+					for _, rtask := range tasks {
+
+						f.Key = rtask.Key
+						ftsk = append(ftsk, f)
+
+					}
+
+					return nil
+
+				})
+
+				if cerr != nil {
+
+					ctx.StatusCode(iris.StatusInternalServerError)
+
+					postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 500 | Search task/tasks in db error | Key [%s] | %v", vhost, ip, skey, err)
+
+					if debugmode {
+
+						_, err = ctx.WriteString("[ERRO] Search task/tasks in db error\n")
+						if err != nil {
+							postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 499 | Can`t complete response to client | %v", vhost, ip, err)
+						}
+
+					}
+
+					return
+
+				}
+
+				for _, task := range ftsk {
+
+					err = NDBDelete(cldb, rvbucket, task.Key)
+					if err != nil {
+						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | 500 | Delete task from db error | Key [%s] | %v", vhost, ip, skey, err)
+					}
+
+				}
 
 			}
 

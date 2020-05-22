@@ -191,6 +191,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					f.Interval = rv.Interval
 					f.Repeaterr = rv.Repeaterr
 					f.Repeatcnt = rv.Repeatcnt
+					f.Replace = rv.Replace
 					f.Stdcode = rv.Stdcode
 					f.Stdout = rv.Stdout
 					f.Errcode = rv.Errcode
@@ -231,6 +232,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 				prefint := task.Interval
 				prefrerr := task.Repeaterr
 				prefrcnt := task.Repeatcnt
+				prefrepl := task.Replace
 
 				pretthr := vhost + ":" + preftype
 
@@ -267,6 +269,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					fint := prefint
 					frerr := prefrerr
 					frcnt := prefrcnt
+					frepl := prefrepl
 
 					vc.RLock()
 					vtscnt := vc.vcounter[tthr]
@@ -305,6 +308,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Interval:  fint,
 							Repeaterr: frerr,
 							Repeatcnt: frcnt,
+							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
@@ -351,6 +355,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Interval:  fint,
 							Repeaterr: frerr,
 							Repeatcnt: frcnt,
+							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
@@ -398,6 +403,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Interval:  fint,
 						Repeaterr: frerr,
 						Repeatcnt: frcnt,
+						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,
 						Errcode:   errcode,
@@ -583,6 +589,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Interval:  fint,
 						Repeaterr: frerr,
 						Repeatcnt: frcnt,
+						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,
 						Errcode:   errcode,
