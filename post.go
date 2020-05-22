@@ -92,6 +92,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 		// Variables
 
+		rsmx := &sync.Mutex{}
+
 		var body []PostTask
 		var resp []GetTask
 		var p GetTask
@@ -569,7 +571,9 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				p.Stderr = stderr
 				p.Runtime = rtime
 
+				rsmx.Lock()
 				resp = append(resp, p)
+				rsmx.Unlock()
 
 			})
 
