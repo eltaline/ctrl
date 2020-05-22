@@ -668,7 +668,6 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 		vinterval := uint32(0)
 		var vrepeaterr []string
 		vrepeatcnt := uint32(0)
-		vreplace := false
 
 		rvbucket := ""
 
@@ -761,7 +760,6 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				vinterval = Server.VINTERVAL
 				vrepeaterr = Server.VREPEATERR
 				vrepeatcnt = Server.VREPEATCNT
-				vreplace = Server.VREPLACE
 				rvbucket = "recv" + "_" + vhost + ":"
 
 				break
@@ -979,7 +977,6 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 			fint := vinterval
 			frerr := vrepeaterr
 			frcnt := vrepeatcnt
-			frepl := vreplace
 
 			if task.Threads > uint32(0) && task.Threads <= uint32(4096) {
 				fthreads = task.Threads
@@ -1004,6 +1001,8 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 			if task.Repeatcnt > uint32(0) && task.Repeatcnt <= uint32(1000) {
 				frcnt = task.Repeatcnt
 			}
+
+			frepl := task.Replace
 
 			etsk := &RawTask{
 				Time:      ftmst,

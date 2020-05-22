@@ -4,7 +4,6 @@ Version: 1.1.3
 Added in version 1.1.3:
 
 - Field replace for /task
-- Parameter ```vreplace```
 
 Version: 1.1.2
 ========

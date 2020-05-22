@@ -92,7 +92,6 @@ type server struct {
 	VINTERVAL  uint32
 	VREPEATERR []string
 	VREPEATCNT uint32
-	VREPLACE   bool
 }
 
 // UssAllow : type for key and slice pairs of a virtual host and user/hash allowable pairs
@@ -415,7 +414,6 @@ func init() {
 	rgxsslcrt := regexp.MustCompile("^(/?[^/\x00]*)+/?$")
 	rgxsslkey := regexp.MustCompile("^(/?[^/\x00]*)+/?$")
 	rgxshell := regexp.MustCompile("^(/?[^/\x00]*)+/?$")
-	rgxreplace := regexp.MustCompile("^(?i)(true|false)$")
 
 	for _, Server := range config.Server {
 
@@ -580,9 +578,6 @@ func init() {
 		mchvrepeatcnt := RBUint(Server.VREPEATCNT, 0, 1000)
 		Check(mchvrepeatcnt, section, "vrepeatcnt", fmt.Sprintf("%d", Server.VREPEATCNT), "from 0 to 1000", DoExit)
 
-		mchvreplace := rgxreplace.MatchString(fmt.Sprintf("%t", Server.VREPLACE))
-		Check(mchvreplace, section, "vreplace", fmt.Sprintf("%t", Server.VREPLACE), "true or false", DoExit)
-
 		// Output Important Server Configuration Options
 
 		appLogger.Warnf("| Host [%s] | Shell [%s]", Server.HOST, Server.SHELL)
@@ -592,13 +587,6 @@ func init() {
 		appLogger.Warnf("| Host [%s] | Scheduler Task TTL Seconds [%d]", Server.HOST, Server.VTTLTIME)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Interval Seconds [%d]", Server.HOST, Server.VINTERVAL)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Repeat Tries [%d]", Server.HOST, Server.VREPEATCNT)
-
-		switch {
-		case Server.VREPLACE:
-			appLogger.Warnf("| Host [%s] | Scheduler Task Replace [ENABLED]", Server.HOST)
-		default:
-			appLogger.Warnf("| Host [%s] | Scheduler Task Replace [DISABLED]", Server.HOST)
-		}
 
 	}
 
