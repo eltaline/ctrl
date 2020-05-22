@@ -865,7 +865,6 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 			if debugmode {
 
-				//				_, err = ctx.WriteString("[ERRO] The body was bad during POST request\n")
 				_, err = ctx.Writef("[ERRO] The body was bad during POST request, %v\n", err)
 
 				if err != nil {
