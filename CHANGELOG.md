@@ -1,3 +1,10 @@
+Version: 1.1.2
+========
+
+Fixed in version 1.1.2:
+
+- Error mutex in /run
+
 Version: 1.1.1
 ========
 
