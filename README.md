@@ -7,12 +7,12 @@ cTRL is a server written in Go language that uses a <a href=https://github.com/e
 Current stable version: 1.1.3
 ========
 
+- <a href=/CHANGELOG.md>Changelog</a>
+
 Added in version 1.1.3:
 
 - Field replace for /task
 - Parameter ```vreplace```
-
-- <a href=/CHANGELOG.md>Changelog</a>
 
 Fixed in version 1.1.2:
 
