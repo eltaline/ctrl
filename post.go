@@ -96,7 +96,6 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 		var body []PostTask
 		var resp []GetTask
-		var p GetTask
 
 		// IP Client
 
@@ -389,6 +388,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 			qwait := make(chan bool)
 
 			qwg.Add(func() {
+
+				var p GetTask
 
 				skey := prefskey
 				ftmst := time.Now().Unix()
