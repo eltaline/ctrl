@@ -189,7 +189,7 @@ Description of fields
 - repeatcnt - the number of task reruns in case of any error from parameter ```repeaterr```
 - replace - overwrite the same task with the same key and the same type in the received queue
 
-Fields ```threads/ttltime/interval/repeaterr/repeatcnt``` are relevant only for tasks queued
+Fields ```threads/ttltime/interval/repeaterr/repeatcnt/replace``` are relevant only for tasks queued
 
 Examples of setting tasks
 --------

@@ -187,7 +187,7 @@ curl -H "Auth: login:pass" "http://localhost/del?queue=completed"
 - repeatcnt - количество повторных запусков задачи в случае совпадения с любой ошибкой из параметра ```repeaterr```
 - replace - перезапись одинаковой задачи с одинаковым ключем и одинаковым типом в очереди received
 
-Поля ```threads/ttltime/interval/repeaterr/repeatcnt``` актуальны только для задач установленных в очередь
+Поля ```threads/ttltime/interval/repeaterr/repeatcnt/replace``` актуальны только для задач установленных в очередь
 
 Примеры установки задач
 --------
