@@ -4,8 +4,12 @@
 
 cTRL is a server written in Go language that uses a <a href=https://github.com/eltaline/nutsdb>modified</a> version of the NutsDB database, as a backend for a continuous queue of tasks and saving the result of executing commands from given tasks in command interpreters like /bin/bash on servers where this service will be used. Using cTRL, you can receive tasks via the HTTP protocol with commands for executing them on the server and limit the number of simultaneously executed tasks.
 
-Current stable version: 1.1.3
+Current stable version: 1.1.4
 ========
+
+Added in version 1.1.4:
+
+- Return error status code from shell
 
 - <a href=/CHANGELOG.md>Changelog</a>
 
@@ -301,6 +305,7 @@ errcode
 - 0 (no error)
 - 1 (any error)
 - 124 (timeout)
+- 137 (out of memory)
 - 255 (failed to start command)
 
 delcode

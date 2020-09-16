@@ -294,6 +294,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					if !DirExists(fpath) {
 
+						errcode = 1
+
 						appLogger.Errorf("| Virtual Host [%s] | Can`t find directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 
 						etsk = &RawTask{
@@ -312,7 +314,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
-							Stderr:    "Can`t open file error",
+							Stderr:    "Can`t find directory error",
 							Runtime:   float64(0),
 						}
 
@@ -341,6 +343,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					_, err = os.Stat(fpath)
 					if err != nil {
 
+						errcode = 1
+
 						appLogger.Errorf("| Virtual Host [%s] | Can`t stat directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 
 						etsk = &RawTask{
@@ -359,7 +363,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
-							Stderr:    "Can`t stat file error",
+							Stderr:    "Can`t stat directory error",
 							Runtime:   float64(0),
 						}
 
@@ -446,16 +450,31 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							err = cmm.Start()
 							if err != nil {
-								errcode = 255
+
+								if exitError, ok := err.(*exec.ExitError); ok {
+									errcode = exitError.ExitCode()
+								} else {
+									errcode = 255
+								}
+
 								stderr = err.Error()
 								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
+
 							}
 
 							err = cmm.Wait()
+
 							if err != nil {
-								errcode = 1
+
+								if exitError, ok := err.(*exec.ExitError); ok {
+									errcode = exitError.ExitCode()
+								} else {
+									errcode = 1
+								}
+
 								stderr = err.Error()
 								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
+
 							}
 
 							crun <- true

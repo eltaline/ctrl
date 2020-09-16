@@ -259,7 +259,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				var tasks nutsdb.Entries
 
-				rgxkey := "(.+)"
+				var rgxkey string
 
 				switch {
 
@@ -833,7 +833,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 				var tasks nutsdb.Entries
 
-				rgxkey := "(.+)"
+				var rgxkey string
 
 				switch {
 				case key != "" && ttype != "" && queue == "received":

@@ -503,16 +503,30 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 					err = cmm.Start()
 					if err != nil {
-						errcode = 255
+
+						if exitError, ok := err.(*exec.ExitError); ok {
+							errcode = exitError.ExitCode()
+						} else {
+							errcode = 255
+						}
+
 						stderr = err.Error()
 						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
+
 					}
 
 					err = cmm.Wait()
 					if err != nil {
-						errcode = 1
+
+						if exitError, ok := err.(*exec.ExitError); ok {
+							errcode = exitError.ExitCode()
+						} else {
+							errcode = 1
+						}
+
 						stderr = err.Error()
 						postLogger.Errorf("| Virtual Host [%s] | Client IP [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, ip, skey, fpath, flock, scm, err)
+
 					}
 
 					crun <- true

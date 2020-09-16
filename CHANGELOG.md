@@ -1,3 +1,10 @@
+Version: 1.1.4
+========
+
+Added in version 1.1.4:
+
+- Return error status code from shell
+
 Version: 1.1.3
 ========
 
