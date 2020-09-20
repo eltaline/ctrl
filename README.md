@@ -7,11 +7,11 @@ cTRL is a server written in Go language that uses a <a href=https://github.com/e
 Current stable version: 1.1.4
 ========
 
+- <a href=/CHANGELOG.md>Changelog</a>
+
 Added in version 1.1.4:
 
 - Return error status code from shell
-
-- <a href=/CHANGELOG.md>Changelog</a>
 
 Added in version 1.1.3:
 
