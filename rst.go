@@ -96,7 +96,7 @@ func ResetWorking(cldb *nutsdb.DB, wg *sync.WaitGroup) {
 		})
 
 		if len(rstt) == 0 {
-			appLogger.Infof("| Virtual Host [%s] | Empty working queue | %v", vhost, cerr)
+			appLogger.Warnf("| Virtual Host [%s] | Empty working queue | %v", vhost, cerr)
 			continue
 		}
 
