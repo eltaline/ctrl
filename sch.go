@@ -685,42 +685,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					rtime = float64(time.Since(stime)) / float64(time.Millisecond)
 
-					vrrcnt := 0
-					vrrbool := false
-
-					for _, rgxrpt := range frerr {
-
-						rreg, err := regexp.Compile(rgxrpt)
-						if err != nil {
-							continue
-						}
-
-						var mchvoo bool
-
-						mchvrr := rreg.MatchString(stderr)
-
-						if lookout {
-							mchvoo = rreg.MatchString(stdout)
-						}
-
-						if mchvrr || mchvoo {
-
-							if vrrcnt == 0 {
-
-								vrrbool = true
-
-								rcnt.Lock()
-								rcnt.trycounter[skey]++
-								rcnt.Unlock()
-
-								vrrcnt++
-
-							}
-
-						}
-
-					}
-
 					vircnt := 0
 					virbool := false
 
@@ -761,6 +725,43 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					}
 
+					vrrcnt := 0
+					vrrbool := false
+
+					for _, rgxrpt := range frerr {
+
+						rreg, err := regexp.Compile(rgxrpt)
+						if err != nil {
+							continue
+						}
+
+						var mchvoo bool
+
+						mchvrr := rreg.MatchString(stderr)
+
+						if lookout {
+							mchvoo = rreg.MatchString(stdout)
+						}
+
+						if mchvrr || mchvoo {
+
+							if vrrcnt == 0 {
+
+								vrrbool = true
+
+								rcnt.Lock()
+								rcnt.trycounter[skey]++
+								rcnt.Unlock()
+
+								vrrcnt++
+
+							}
+
+						}
+
+					}
+
+
 					ebuffer := new(bytes.Buffer)
 					eenc := gob.NewEncoder(ebuffer)
 
@@ -793,29 +794,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						return
 					}
 
-					rcnt.RLock()
-					vrrc := rcnt.trycounter[skey]
-					rcnt.RUnlock()
-
-					if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
-
-						err = NDBDelete(cldb, wvbucket, bkey)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
-						return
-
-					}
-
-					rcnt.Lock()
-					_, rok := rcnt.trycounter[skey]
-					if rok {
-						delete(rcnt.trycounter, skey)
-					}
-					rcnt.Unlock()
-
 					if intercept {
 
 						icnt.RLock()
@@ -842,6 +820,29 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						icnt.Unlock()
 
 					}
+
+					rcnt.RLock()
+					vrrc := rcnt.trycounter[skey]
+					rcnt.RUnlock()
+
+					if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
+
+						err = NDBDelete(cldb, wvbucket, bkey)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+							return
+						}
+
+						return
+
+					}
+
+					rcnt.Lock()
+					_, rok := rcnt.trycounter[skey]
+					if rok {
+						delete(rcnt.trycounter, skey)
+					}
+					rcnt.Unlock()
 
 					err = NDBDelete(cldb, rvbucket, bkey)
 					if err != nil {
