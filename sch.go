@@ -725,7 +725,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					vircnt := 0
 					virbool := false
 
-					if intercept {
+					vrrcnt := 0
+					vrrbool := false
+
+					if intercept && lenireg > 0 {
 
 						for _, rgx := range ireg {
 
@@ -756,9 +759,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						}
 
 					}
-
-					vrrcnt := 0
-					vrrbool := false
 
 					if lenrreg > 0 {
 
@@ -824,7 +824,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						return
 					}
 
-					if intercept {
+					if intercept && lenireg > 0 {
 
 						icnt.RLock()
 						virc := icnt.trycounter[skey]
@@ -851,28 +851,32 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					}
 
-					rcnt.RLock()
-					vrrc := rcnt.trycounter[skey]
-					rcnt.RUnlock()
+					if lenrreg > 0 {
 
-					if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
+						rcnt.RLock()
+						vrrc := rcnt.trycounter[skey]
+						rcnt.RUnlock()
 
-						err = NDBDelete(cldb, wvbucket, bkey)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+						if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
+
+							err = NDBDelete(cldb, wvbucket, bkey)
+							if err != nil {
+								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+								return
+							}
+
 							return
+
 						}
 
-						return
+						rcnt.Lock()
+						_, rok := rcnt.trycounter[skey]
+						if rok {
+							delete(rcnt.trycounter, skey)
+						}
+						rcnt.Unlock()
 
 					}
-
-					rcnt.Lock()
-					_, rok := rcnt.trycounter[skey]
-					if rok {
-						delete(rcnt.trycounter, skey)
-					}
-					rcnt.Unlock()
 
 					err = NDBDelete(cldb, rvbucket, bkey)
 					if err != nil {
