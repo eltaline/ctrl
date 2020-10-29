@@ -12,6 +12,8 @@ Current stable version: 1.1.5
 Added in version 1.1.5:
 
 - ```interr, intcnt``` fields for intercept errors and kill/repeat tasks on the fly
+- ```vinterr, vintcnt``` fields for intercept errors and kill/repeat tasks on the fly in server configuration
+- ```lookout``` boolean, enable or disable reaction on errors from stdout
 
 Added in version 1.1.4:
 
@@ -197,9 +199,10 @@ Description of fields
 - repeatcnt - the number of task reruns in case of any error from parameter ```repeaterr```
 - interr - enumeration of errors that require kill running task
 - intcnt - the number of task reruns in case of any error from parameter ```interr```
+- lookout - enable or disable reaction on errors from stdout
 - replace - overwrite the same task with the same key and the same type in the received queue
 
-Fields ```threads/ttltime/interval/repeaterr/repeatcnt/interr/intcnt/replace``` are relevant only for tasks queued
+Fields ```threads/ttltime/interval/repeaterr/repeatcnt/interr/intcnt/lookout/replace``` are relevant only for tasks queued
 
 Examples of setting tasks
 --------
@@ -226,7 +229,7 @@ Example for one task through /task:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false}
 ]
 ```
 
@@ -234,9 +237,9 @@ Example for a task list through /task:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false}
 ]
 ```
 
@@ -260,6 +263,7 @@ Description of fields
 - repeatcnt - the number of task reruns in case of any error from parameter ```repeaterr```
 - interr - enumeration of errors that require kill running task
 - intcnt - the number of task reruns in case of any error from parameter ```interr```
+- lookout - enable or disable reaction on errors from stdout
 - replace - overwrite the same task with the same key and the same type in the received queue
 - stdcode - not used at the moment
 - stdout - standard output
@@ -276,9 +280,9 @@ Output of completed tasks:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685}
 ]
 ```
 
@@ -286,9 +290,9 @@ Output of deleted tasks:
 
 ```json
 [
-{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
-{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
-{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
+{"key":"777a0d24-289e-4615-a439-0bd4efab6103","time":1589737139,"type":"mytype","path":"/","lock":"mylock1","command":"echo \"hello\" && logger \"hello\" && sleep 5","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"hello\n","errcode":0,"stderr":"","runtime":10010.669069,"delcode":0,"delerr":""},
+{"key":"4964deca-46ff-413f-8a92-e5baefd328e7","time":1589737139,"type":"mytype","path":"/","lock":"mylock2","command":"echo \"great\" && logger \"great\" && sleep 30","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"great\n","errcode":124,"stderr":"signal: killed","runtime":15006.034832,"delcode":0,"delerr":""},
+{"key":"3fdf744d-36f1-499d-bd39-90a004ee39f6","time":1589737139,"type":"mytype","path":"/","lock":"mylock3","command":"echo \"world\" && logger \"world\" && sleep 15","threads":4,"timeout":15,"ttltime":3600,"interval":1,"repeaterr":["CUDA_ERROR_OUT_OF_MEMORY","OtherError"],"repeatcnt":3,"interr":["Generic error in an external library","OtherError"],"intcnt":1,"lookout":false,"replace":false,"stdcode":0,"stdout":"world\n","errcode":0,"stderr":"","runtime":15019.839685,"delcode":0,"delerr":""}
 ]
 ```
 

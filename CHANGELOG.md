@@ -4,6 +4,8 @@ Version: 1.1.5
 Added in version 1.1.5:
 
 - ```interr, intcnt``` fields for intercept errors and kill/repeat tasks on the fly
+- ```vinterr, vintcnt``` fields for intercept errors and kill/repeat tasks on the fly in server configuration
+- ```lookout``` boolean, enable or disable reaction on errors from stdout
 
 Version: 1.1.4
 ========
