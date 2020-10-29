@@ -192,6 +192,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					f.Repeatcnt = rv.Repeatcnt
 					f.Interr = rv.Interr
 					f.Intcnt = rv.Intcnt
+					f.Lookout = rv.Lookout
 					f.Replace = rv.Replace
 					f.Stdcode = rv.Stdcode
 					f.Stdout = rv.Stdout
@@ -235,6 +236,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 				prefrcnt := task.Repeatcnt
 				prefierr := task.Interr
 				preficnt := task.Intcnt
+				prefsout := task.Lookout
 				prefrepl := task.Replace
 
 				pretthr := vhost + ":" + preftype
@@ -274,6 +276,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					frcnt := prefrcnt
 					fierr := prefierr
 					ficnt := preficnt
+					fsout := prefsout
 					frepl := prefrepl
 
 					vc.RLock()
@@ -293,6 +296,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					stdout := ""
 					stderr := ""
+
+					lookout := fsout
 
 					pbuffer := new(bytes.Buffer)
 					penc := gob.NewEncoder(pbuffer)
@@ -319,6 +324,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Repeatcnt: frcnt,
 							Interr:    fierr,
 							Intcnt:    ficnt,
+							Lookout:   fsout,
 							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
@@ -372,6 +378,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Repeatcnt: frcnt,
 							Interr:    fierr,
 							Intcnt:    ficnt,
+							Lookout:   fsout,
 							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
@@ -431,6 +438,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Repeatcnt: frcnt,
 						Interr:    fierr,
 						Intcnt:    ficnt,
+						Lookout:   fsout,
 						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,
@@ -687,9 +695,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							continue
 						}
 
+						var mchvoo bool
+
 						mchvrr := rreg.MatchString(stderr)
 
-						if mchvrr {
+						if lookout {
+							mchvoo = rreg.MatchString(stdout)
+						}
+
+						if mchvrr || mchvoo {
 
 							if vrrcnt == 0 {
 
@@ -719,9 +733,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 								continue
 							}
 
+							var mchvio bool
+
 							mchvir := ireg.MatchString(stderr)
 
-							if mchvir {
+							if lookout {
+								mchvio = ireg.MatchString(stdout)
+							}
+
+							if mchvir || mchvio {
 
 								if vircnt == 0 {
 
@@ -758,6 +778,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Repeatcnt: frcnt,
 						Interr:    fierr,
 						Intcnt:    ficnt,
+						Lookout:   fsout,
 						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,

@@ -133,6 +133,7 @@ type GetTask struct {
 	Repeatcnt uint32   `json:"repeatcnt"`
 	Interr    []string `json:"interr"`
 	Intcnt    uint32   `json:"intcnt"`
+	Lookout   bool     `json:"lookout"`
 	Replace   bool     `json:"replace"`
 	Stdcode   int      `json:"stdcode"`
 	Stdout    string   `json:"stdout"`
@@ -156,6 +157,7 @@ type PostTask struct {
 	Repeatcnt uint32   `json:"repeatcnt"`
 	Interr    []string `json:"interr"`
 	Intcnt    uint32   `json:"intcnt"`
+	Lookout   bool     `json:"lookout"`
 	Replace   bool     `json:"replace"`
 }
 
@@ -175,6 +177,7 @@ type DelTask struct {
 	Repeatcnt uint32   `json:"repeatcnt"`
 	Interr    []string `json:"interr"`
 	Intcnt    uint32   `json:"intcnt"`
+	Lookout   bool     `json:"lookout"`
 	Replace   bool     `json:"replace"`
 	Stdcode   int      `json:"stdcode"`
 	Stdout    string   `json:"stdout"`
@@ -200,6 +203,7 @@ type RawTask struct {
 	Repeatcnt uint32
 	Interr    []string
 	Intcnt    uint32
+	Lookout   bool
 	Replace   bool
 	Stdcode   int
 	Stdout    string
@@ -224,6 +228,7 @@ type FullTask struct {
 	Repeatcnt uint32
 	Interr    []string
 	Intcnt    uint32
+	Lookout   bool
 	Replace   bool
 	Stdcode   int
 	Stdout    string

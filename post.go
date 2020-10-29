@@ -1030,6 +1030,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				ficnt = task.Intcnt
 			}
 
+			fsout := task.Lookout
 			frepl := task.Replace
 
 			etsk := &RawTask{
@@ -1046,6 +1047,7 @@ func CtrlTask(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				Repeatcnt: frcnt,
 				Interr:    fierr,
 				Intcnt:    ficnt,
+				Lookout:   fsout,
 				Replace:   frepl,
 				Stdcode:   stdcode,
 				Stdout:    stdout,

@@ -508,6 +508,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 					f.Repeatcnt = rt.Repeatcnt
 					f.Interr = rt.Interr
 					f.Intcnt = rt.Intcnt
+					f.Lookout = rt.Lookout
 					f.Replace = rt.Replace
 					f.Stdcode = rt.Stdcode
 					f.Stdout = rt.Stdout
@@ -571,6 +572,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 				p.Repeatcnt = task.Repeatcnt
 				p.Interr = task.Interr
 				p.Intcnt = task.Intcnt
+				p.Lookout = task.Lookout
 				p.Replace = task.Replace
 				p.Stdcode = task.Stdcode
 				p.Stdout = task.Stdout
@@ -1114,6 +1116,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 					f.Repeatcnt = rt.Repeatcnt
 					f.Interr = rt.Interr
 					f.Intcnt = rt.Intcnt
+					f.Lookout = rt.Lookout
 					f.Replace = rt.Replace
 					f.Stdcode = rt.Stdcode
 					f.Stdout = rt.Stdout
@@ -1200,6 +1203,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 				d.Repeatcnt = task.Repeatcnt
 				d.Interr = task.Interr
 				d.Intcnt = task.Intcnt
+				d.Lookout = task.Lookout
 				d.Replace = task.Replace
 				d.Stdcode = task.Stdcode
 				d.Stdout = task.Stdout
