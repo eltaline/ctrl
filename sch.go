@@ -732,6 +732,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					ewg.Wait()
 					close(kill)
 
+					if shutdown {
+						return
+					}
+
 					stdout = imsgout
 					stderr = imsgerr
 
