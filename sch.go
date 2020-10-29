@@ -513,6 +513,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					owait := make(chan bool)
 					ewait := make(chan bool)
 
+					ssync := make(chan bool)
+
 					cmkey := vhost + ":" + skey
 
 					stime := time.Now()
@@ -523,6 +525,9 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 						cwg.Add(func() {
 
+							<-ssync
+							close(ssync)
+
 							err = cmm.Start()
 							if err != nil {
 
@@ -532,8 +537,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 									errcode = 255
 								}
 
-								stderr = err.Error()
-								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
+								imsgerr = err.Error()
+								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
 
 							}
 
@@ -547,8 +552,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 									errcode = 1
 								}
 
-								stderr = err.Error()
-								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
+								imsgerr = err.Error()
+								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
 
 							}
 
@@ -559,8 +564,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					} else {
 
 						errcode = 255
-						stderr = "Timeout mmutex lock error"
-						appLogger.Errorf("| Virtual Host [%s] | Timeout mmutex lock error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
+						imsgerr = "Timeout mmutex lock error"
+						appLogger.Errorf("| Virtual Host [%s] | Timeout mmutex lock error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
 
 					}
 
@@ -675,6 +680,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					<-ewait
 					close(ewait)
+
+					ssync <- true
 
 					cmmt := time.After(time.Duration(int(ftout)) * time.Second)
 
@@ -902,6 +909,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					if err != nil {
 						appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 						return
+					}
+
+					if errcode != 0 {
+						appLogger.Errorf("| Virtual Host [%s] | Task completed with error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | exit status %d", vhost, skey, fpath, flock, fcomm, stderr, errcode)
 					}
 
 				})
