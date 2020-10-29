@@ -55,58 +55,65 @@ func ResetWorking(cldb *nutsdb.DB, wg *sync.WaitGroup) {
 
 	errempty := errors.New("bucket is empty")
 
-	var rstt []ResetTask
-	var r ResetTask
+	for _, Server := range config.Server {
 
-	wvbucket := "work"
+		vhost := Server.HOST
 
-	cerr := cldb.View(func(tx *nutsdb.Tx) error {
+		var rstt []ResetTask
+		var r ResetTask
 
-		var err error
+		wvbucket := "work" + "_" + vhost + ":"
 
-		var tasks nutsdb.Entries
+		cerr := cldb.View(func(tx *nutsdb.Tx) error {
 
-		tasks, err = tx.GetAll(wvbucket)
+			var err error
 
-		if tasks == nil {
+			var tasks nutsdb.Entries
+
+			tasks, err = tx.GetAll(wvbucket)
+
+			if tasks == nil {
+				return nil
+			}
+
+			if err != nil && err.Error() == errempty.Error() {
+				return nil
+			}
+
+			if err != nil {
+				return err
+			}
+
+			for _, rtask := range tasks {
+
+				r.Key = rtask.Key
+				rstt = append(rstt, r)
+
+			}
+
 			return nil
+
+		})
+
+		if len(rstt) == 0 {
+			appLogger.Infof("| Virtual Host [%s] | Empty working queue | %v", vhost, cerr)
+			continue
 		}
 
-		if err != nil && err.Error() == errempty.Error() {
-			return nil
+		if cerr != nil {
+			appLogger.Errorf("| Virtual Host [%s] | Work with db error | %v", vhost, cerr)
+			continue
 		}
 
-		if err != nil {
-			return err
-		}
+		for _, task := range rstt {
 
-		for _, rtask := range tasks {
+			skey := string(task.Key)
 
-			r.Key = rtask.Key
-			rstt = append(rstt, r)
+			err = NDBDelete(cldb, wvbucket, task.Key)
+			if err != nil {
+				appLogger.Errorf("| Virtual Host [%s] | Initial reset task from db error | Key [%s] | %v", vhost, skey, err)
+			}
 
-		}
-
-		return nil
-
-	})
-
-	if len(rstt) == 0 {
-		return
-	}
-
-	if cerr != nil {
-		appLogger.Errorf("| Work with db error | %v", cerr)
-		return
-	}
-
-	for _, task := range rstt {
-
-		skey := string(task.Key)
-
-		err = NDBDelete(cldb, wvbucket, task.Key)
-		if err != nil {
-			appLogger.Errorf("| Initial reset task from db error | Key [%s] | %v", skey, err)
 		}
 
 	}

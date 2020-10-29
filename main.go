@@ -810,6 +810,10 @@ func main() {
 
 		timeout := 5 * time.Second
 
+		// Reset working queue
+
+		ResetWorking(cldb, &wg)
+
 		// Merge DB
 
 		appLogger.Warnf("Merging db")
