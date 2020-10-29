@@ -1,3 +1,10 @@
+Version: 1.1.5
+========
+
+Added in version 1.1.5:
+
+- ```interr, intcnt``` fields for intercept errors and kill/repeat tasks on the fly
+
 Version: 1.1.4
 ========
 

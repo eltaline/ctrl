@@ -25,9 +25,11 @@ this libraries is subject to the terms and conditions of licenses these librarie
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"github.com/pieterclaerhout/go-waitgroup"
@@ -58,15 +60,12 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 	for _, Server := range config.Server {
 
-		prevhost := Server.HOST
-		prevshell := Server.SHELL
-
 		vwait := make(chan bool)
 
 		vwg.Add(func() {
 
-			vhost := prevhost
-			shell := prevshell
+			vhost := Server.HOST
+			shell := Server.SHELL
 
 			rvbucket := "recv" + "_" + vhost + ":"
 			wvbucket := "work" + "_" + vhost + ":"
@@ -191,6 +190,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					f.Interval = rv.Interval
 					f.Repeaterr = rv.Repeaterr
 					f.Repeatcnt = rv.Repeatcnt
+					f.Interr = rv.Interr
+					f.Intcnt = rv.Intcnt
 					f.Replace = rv.Replace
 					f.Stdcode = rv.Stdcode
 					f.Stdout = rv.Stdout
@@ -232,6 +233,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 				prefint := task.Interval
 				prefrerr := task.Repeaterr
 				prefrcnt := task.Repeatcnt
+				prefierr := task.Interr
+				preficnt := task.Intcnt
 				prefrepl := task.Replace
 
 				pretthr := vhost + ":" + preftype
@@ -269,6 +272,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					fint := prefint
 					frerr := prefrerr
 					frcnt := prefrcnt
+					fierr := prefierr
+					ficnt := preficnt
 					frepl := prefrepl
 
 					vc.RLock()
@@ -294,6 +299,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					if !DirExists(fpath) {
 
+						stderr = fmt.Sprintf("Virtual Host [%s] | Can`t find directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+
 						errcode = 1
 
 						appLogger.Errorf("| Virtual Host [%s] | Can`t find directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
@@ -310,11 +317,13 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Interval:  fint,
 							Repeaterr: frerr,
 							Repeatcnt: frcnt,
+							Interr:    fierr,
+							Intcnt:    ficnt,
 							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
-							Stderr:    "Can`t find directory error",
+							Stderr:    stderr,
 							Runtime:   float64(0),
 						}
 
@@ -343,6 +352,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					_, err = os.Stat(fpath)
 					if err != nil {
 
+						stderr = fmt.Sprintf("Virtual Host [%s] | Can`t stat directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+
 						errcode = 1
 
 						appLogger.Errorf("| Virtual Host [%s] | Can`t stat directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
@@ -359,11 +370,13 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 							Interval:  fint,
 							Repeaterr: frerr,
 							Repeatcnt: frcnt,
+							Interr:    fierr,
+							Intcnt:    ficnt,
 							Replace:   frepl,
 							Stdcode:   stdcode,
 							Stdout:    stdout,
 							Errcode:   errcode,
-							Stderr:    "Can`t stat directory error",
+							Stderr:    stderr,
 							Runtime:   float64(0),
 						}
 
@@ -389,11 +402,20 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					}
 
-					var cmmout bytes.Buffer
-					var cmmerr bytes.Buffer
-
 					scm := shell + " -c " + "\"cd " + fpath + " && " + fcomm + "\""
 					cmm := exec.Command(shell, "-c", scm)
+
+					pstdout, err := cmm.StdoutPipe()
+					if err != nil {
+						appLogger.Errorf("| Virtual Host [%s] | Can`t attach to stdout pipe | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+						return
+					}
+
+					pstderr, err := cmm.StderrPipe()
+					if err != nil {
+						appLogger.Errorf("| Virtual Host [%s] | Can`t attach to stderr pipe | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+						return
+					}
 
 					etsk = &RawTask{
 						Time:      ftmst,
@@ -407,6 +429,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Interval:  fint,
 						Repeaterr: frerr,
 						Repeatcnt: frcnt,
+						Interr:    fierr,
+						Intcnt:    ficnt,
 						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,
@@ -429,14 +453,18 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					var rtime float64
 
-					cmm.Stdout = &cmmout
-					cmm.Stderr = &cmmerr
-
 					cwg := waitgroup.NewWaitGroup(1)
+
+					var intercept bool
+
+					imsgout := ""
+					imsgerr := ""
 
 					crun := make(chan bool)
 					kill := make(chan bool)
 					kwait := make(chan bool)
+					owait := make(chan bool)
+					ewait := make(chan bool)
 
 					cmkey := vhost + ":" + skey
 
@@ -511,6 +539,90 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					<-kwait
 					close(kwait)
 
+					owg := waitgroup.NewWaitGroup(1)
+
+					owg.Add(func() {
+
+						scanner := bufio.NewScanner(pstdout)
+
+						owait <- true
+
+					Loop:
+
+						for scanner.Scan() {
+
+							msg := scanner.Text()
+
+							imsgout = imsgout + "\n" + msg
+
+							for _, rgxint := range fierr {
+
+								ireg, err := regexp.Compile(rgxint)
+								if err != nil {
+									continue
+								}
+
+								mchvir := ireg.MatchString(msg)
+
+								if mchvir {
+
+									intercept = true
+									kill <- true
+									break Loop
+
+								}
+
+							}
+
+						}
+
+					})
+
+					<-owait
+					close(owait)
+
+					ewg := waitgroup.NewWaitGroup(1)
+
+					ewg.Add(func() {
+
+						scanner := bufio.NewScanner(pstderr)
+
+						ewait <- true
+
+					Loop:
+
+						for scanner.Scan() {
+
+							msg := scanner.Text()
+
+							imsgerr = imsgerr + "\n" + msg
+
+							for _, rgxint := range fierr {
+
+								ireg, err := regexp.Compile(rgxint)
+								if err != nil {
+									continue
+								}
+
+								mchvir := ireg.MatchString(msg)
+
+								if mchvir {
+
+									intercept = true
+									kill <- true
+									break Loop
+
+								}
+
+							}
+
+						}
+
+					})
+
+					<-ewait
+					close(ewait)
+
 					cmmt := time.After(time.Duration(int(ftout)) * time.Second)
 
 				Kill:
@@ -556,12 +668,14 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					}
 
 					kwg.Wait()
+					owg.Wait()
+					ewg.Wait()
 					close(kill)
 
-					rtime = float64(time.Since(stime)) / float64(time.Millisecond)
+					stdout = imsgout
+					stderr = imsgerr
 
-					stdout = cmmout.String()
-					stderr = cmmerr.String()
+					rtime = float64(time.Since(stime)) / float64(time.Millisecond)
 
 					vrrcnt := 0
 					vrrbool := false
@@ -593,6 +707,40 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					}
 
+					vircnt := 0
+					virbool := false
+
+					if intercept {
+
+						for _, rgxint := range fierr {
+
+							ireg, err := regexp.Compile(rgxint)
+							if err != nil {
+								continue
+							}
+
+							mchvir := ireg.MatchString(stderr)
+
+							if mchvir {
+
+								if vircnt == 0 {
+
+									virbool = true
+
+									icnt.Lock()
+									icnt.trycounter[skey]++
+									icnt.Unlock()
+
+									vircnt++
+
+								}
+
+							}
+
+						}
+
+					}
+
 					ebuffer := new(bytes.Buffer)
 					eenc := gob.NewEncoder(ebuffer)
 
@@ -608,6 +756,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 						Interval:  fint,
 						Repeaterr: frerr,
 						Repeatcnt: frcnt,
+						Interr:    fierr,
+						Intcnt:    ficnt,
 						Replace:   frepl,
 						Stdcode:   stdcode,
 						Stdout:    stdout,
@@ -639,11 +789,38 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					}
 
 					rcnt.Lock()
-					_, ok := rcnt.trycounter[skey]
-					if ok {
+					_, rok := rcnt.trycounter[skey]
+					if rok {
 						delete(rcnt.trycounter, skey)
 					}
 					rcnt.Unlock()
+
+					if intercept {
+
+						icnt.RLock()
+						virc := icnt.trycounter[skey]
+						icnt.RUnlock()
+
+						if virbool && virc > 0 && virc <= int(ficnt) {
+
+							err = NDBDelete(cldb, wvbucket, bkey)
+							if err != nil {
+								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+								return
+							}
+
+							return
+
+						}
+
+						icnt.Lock()
+						_, iok := icnt.trycounter[skey]
+						if iok {
+							delete(icnt.trycounter, skey)
+						}
+						icnt.Unlock()
+
+					}
 
 					err = NDBDelete(cldb, rvbucket, bkey)
 					if err != nil {

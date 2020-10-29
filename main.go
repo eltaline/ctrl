@@ -92,6 +92,8 @@ type server struct {
 	VINTERVAL  uint32
 	VREPEATERR []string
 	VREPEATCNT uint32
+	VINTERR    []string
+	VINTCNT    uint32
 }
 
 // UssAllow : type for key and slice pairs of a virtual host and user/hash allowable pairs
@@ -129,6 +131,8 @@ type GetTask struct {
 	Interval  uint32   `json:"interval"`
 	Repeaterr []string `json:"repeaterr"`
 	Repeatcnt uint32   `json:"repeatcnt"`
+	Interr    []string `json:"interr"`
+	Intcnt    uint32   `json:"intcnt"`
 	Replace   bool     `json:"replace"`
 	Stdcode   int      `json:"stdcode"`
 	Stdout    string   `json:"stdout"`
@@ -150,6 +154,8 @@ type PostTask struct {
 	Interval  uint32   `json:"interval"`
 	Repeaterr []string `json:"repeaterr"`
 	Repeatcnt uint32   `json:"repeatcnt"`
+	Interr    []string `json:"interr"`
+	Intcnt    uint32   `json:"intcnt"`
 	Replace   bool     `json:"replace"`
 }
 
@@ -167,6 +173,8 @@ type DelTask struct {
 	Interval  uint32   `json:"interval"`
 	Repeaterr []string `json:"repeaterr"`
 	Repeatcnt uint32   `json:"repeatcnt"`
+	Interr    []string `json:"interr"`
+	Intcnt    uint32   `json:"intcnt"`
 	Replace   bool     `json:"replace"`
 	Stdcode   int      `json:"stdcode"`
 	Stdout    string   `json:"stdout"`
@@ -190,6 +198,8 @@ type RawTask struct {
 	Interval  uint32
 	Repeaterr []string
 	Repeatcnt uint32
+	Interr    []string
+	Intcnt    uint32
 	Replace   bool
 	Stdcode   int
 	Stdout    string
@@ -212,6 +222,8 @@ type FullTask struct {
 	Interval  uint32
 	Repeaterr []string
 	Repeatcnt uint32
+	Interr    []string
+	Intcnt    uint32
 	Replace   bool
 	Stdcode   int
 	Stdout    string
@@ -276,6 +288,11 @@ var (
 		trycounter map[string]int
 	}{trycounter: make(map[string]int)}
 
+	icnt = struct {
+		sync.RWMutex
+		trycounter map[string]int
+	}{trycounter: make(map[string]int)}
+
 	logdir  string = "/var/log/ctrl"
 	logmode os.FileMode
 
@@ -291,7 +308,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.1.4"
+	var version string = "1.1.5"
 	var vprint bool = false
 	var help bool = false
 
@@ -578,6 +595,9 @@ func init() {
 		mchvrepeatcnt := RBUint(Server.VREPEATCNT, 0, 1000)
 		Check(mchvrepeatcnt, section, "vrepeatcnt", fmt.Sprintf("%d", Server.VREPEATCNT), "from 0 to 1000", DoExit)
 
+		mchvintcnt := RBUint(Server.VINTCNT, 0, 1000)
+		Check(mchvintcnt, section, "vintcnt", fmt.Sprintf("%d", Server.VINTCNT), "from 0 to 1000", DoExit)
+
 		// Output Important Server Configuration Options
 
 		appLogger.Warnf("| Host [%s] | Shell [%s]", Server.HOST, Server.SHELL)
@@ -587,6 +607,7 @@ func init() {
 		appLogger.Warnf("| Host [%s] | Scheduler Task TTL Seconds [%d]", Server.HOST, Server.VTTLTIME)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Interval Seconds [%d]", Server.HOST, Server.VINTERVAL)
 		appLogger.Warnf("| Host [%s] | Scheduler Task Repeat Tries [%d]", Server.HOST, Server.VREPEATCNT)
+		appLogger.Warnf("| Host [%s] | Scheduler Task Intercept Tries [%d]", Server.HOST, Server.VINTCNT)
 
 	}
 

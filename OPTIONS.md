@@ -208,7 +208,7 @@ vinterval
 - **Section:** [server.name]
 
 vrepeaterr
-- **Description:** This sets default parsing of errors when performing tasks; you can specify several errors in which repetitions of task execution will work.
+- **Description:** This sets default parsing of errors when performing tasks(after executed task); you can specify several errors in which repetitions of task execution will work.
 - **Default:**
 - **Values:**
 - **Type:** []string
@@ -216,6 +216,20 @@ vrepeaterr
 
 vrepeatcnt
 - **Description:** This sets default number of task re-starts if one of the errors specified in the vrepeaterr parameter is received.
+- **Default:** 0
+- **Values:** 0-1000
+- **Type:** uint32
+- **Section:** [server.name]
+
+vinterr
+- **Description:** This sets default parsing of errors when performing tasks(during executing task); you can specify several errors in which kill task and repetitions of task execution will work.
+- **Default:**
+- **Values:**
+- **Type:** []string
+- **Section:** [server.name]
+
+vintcnt
+- **Description:** This sets default number of task re-starts if one of the errors specified in the vinterr parameter is received.
 - **Default:** 0
 - **Values:** 0-1000
 - **Type:** uint32
