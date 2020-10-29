@@ -600,7 +600,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							msg := scanner.Text()
 
-							imsgout = imsgout + "\n" + msg
+							imsgout = imsgout + msg + "\n"
 
 							if lookout && lenireg > 0 {
 
@@ -641,7 +641,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							msg := scanner.Text()
 
-							imsgerr = imsgerr + "\n" + msg
+							imsgerr = imsgerr + msg + "\n"
 
 							if lenireg > 0 {
 

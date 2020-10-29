@@ -6,6 +6,7 @@ require (
 	github.com/Joker/hpp v1.0.0 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/dgraph-io/badger v1.6.0 // indirect
+	github.com/dgraph-io/badger/v2 v2.2007.2 // indirect
 	github.com/eltaline/gron v0.0.0-20160621042432-e78485adab46
 	github.com/eltaline/mmutex v0.0.0-20200516113347-4a6ee28318a9
 	github.com/eltaline/nutsdb v0.5.1-0.20200518094744-ed31df68a8a9
