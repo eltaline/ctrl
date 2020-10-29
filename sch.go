@@ -620,6 +620,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							}
 
+							if !keymutex.IsLock(cmkey) {
+								break
+							}
+
 						}
 
 					})
@@ -659,6 +663,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 								}
 
+							}
+
+							if !keymutex.IsLock(cmkey) {
+								break
 							}
 
 						}
