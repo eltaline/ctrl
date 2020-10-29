@@ -538,7 +538,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 								}
 
 								imsgerr = err.Error()
-								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
+								appLogger.Errorf("| Virtual Host [%s] | Start command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
 
 							}
 
@@ -552,8 +552,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 									errcode = 1
 								}
 
-								imsgerr = err.Error()
-								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
+								imsgerr = imsgerr + err.Error() + "\n"
+								appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
 
 							}
 
