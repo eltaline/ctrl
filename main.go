@@ -237,6 +237,11 @@ type FullTask struct {
 	Runtime   float64
 }
 
+type Ereg struct {
+	Str string
+	Rgx *regexp.Regexp
+}
+
 // ResetTask : reset type task with key only
 type ResetTask struct {
 	Key []byte

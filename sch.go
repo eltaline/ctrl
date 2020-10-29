@@ -299,6 +299,45 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					lookout := fsout
 
+					var ig Ereg
+					var rg Ereg
+
+					var ireg []Ereg
+					var rreg []Ereg
+
+					for _, rgxint := range fierr {
+
+						irgx, err := regexp.Compile(rgxint)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Bad pattern in intercept errors array | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Regular [%s] | %v", vhost, skey, fpath, flock, fcomm, rgxint, err)
+							continue
+						}
+
+						ig.Str = rgxint
+						ig.Rgx = irgx
+
+						ireg = append(ireg, ig)
+
+					}
+
+					for _, rgxrpt := range frerr {
+
+						rrgx, err := regexp.Compile(rgxrpt)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Bad pattern in repeat errors array | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Regular [%s] | %v", vhost, skey, fpath, flock, fcomm, rgxrpt, err)
+							continue
+						}
+
+						rg.Str = rgxrpt
+						rg.Rgx = rrgx
+
+						rreg = append(rreg, rg)
+
+					}
+
+					lenireg := len(ireg)
+					lenrreg := len(rreg)
+
 					pbuffer := new(bytes.Buffer)
 					penc := gob.NewEncoder(pbuffer)
 
@@ -563,20 +602,19 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							imsgout = imsgout + "\n" + msg
 
-							for _, rgxint := range fierr {
+							if lookout && lenireg > 0 {
 
-								ireg, err := regexp.Compile(rgxint)
-								if err != nil {
-									continue
-								}
+								for _, rgx := range ireg {
 
-								mchvir := ireg.MatchString(msg)
+									mchvir := rgx.Rgx.MatchString(msg)
 
-								if mchvir {
+									if mchvir {
 
-									intercept = true
-									kill <- true
-									break Loop
+										intercept = true
+										kill <- true
+										break Loop
+
+									}
 
 								}
 
@@ -605,20 +643,19 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 							imsgerr = imsgerr + "\n" + msg
 
-							for _, rgxint := range fierr {
+							if lenireg > 0 {
 
-								ireg, err := regexp.Compile(rgxint)
-								if err != nil {
-									continue
-								}
+								for _, rgx := range ireg {
 
-								mchvir := ireg.MatchString(msg)
+									mchvir := rgx.Rgx.MatchString(msg)
 
-								if mchvir {
+									if mchvir {
 
-									intercept = true
-									kill <- true
-									break Loop
+										intercept = true
+										kill <- true
+										break Loop
+
+									}
 
 								}
 
@@ -690,19 +727,14 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 					if intercept {
 
-						for _, rgxint := range fierr {
-
-							ireg, err := regexp.Compile(rgxint)
-							if err != nil {
-								continue
-							}
+						for _, rgx := range ireg {
 
 							var mchvio bool
 
-							mchvir := ireg.MatchString(stderr)
+							mchvir := rgx.Rgx.MatchString(stderr)
 
 							if lookout {
-								mchvio = ireg.MatchString(stdout)
+								mchvio = rgx.Rgx.MatchString(stdout)
 							}
 
 							if mchvir || mchvio {
@@ -728,39 +760,37 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 					vrrcnt := 0
 					vrrbool := false
 
-					for _, rgxrpt := range frerr {
+					if lenrreg > 0 {
 
-						rreg, err := regexp.Compile(rgxrpt)
-						if err != nil {
-							continue
-						}
+						for _, rgx := range rreg {
 
-						var mchvoo bool
+							var mchvoo bool
 
-						mchvrr := rreg.MatchString(stderr)
+							mchvrr := rgx.Rgx.MatchString(stderr)
 
-						if lookout {
-							mchvoo = rreg.MatchString(stdout)
-						}
+							if lookout {
+								mchvoo = rgx.Rgx.MatchString(stdout)
+							}
 
-						if mchvrr || mchvoo {
+							if mchvrr || mchvoo {
 
-							if vrrcnt == 0 {
+								if vrrcnt == 0 {
 
-								vrrbool = true
+									vrrbool = true
 
-								rcnt.Lock()
-								rcnt.trycounter[skey]++
-								rcnt.Unlock()
+									rcnt.Lock()
+									rcnt.trycounter[skey]++
+									rcnt.Unlock()
 
-								vrrcnt++
+									vrrcnt++
+
+								}
 
 							}
 
 						}
 
 					}
-
 
 					ebuffer := new(bytes.Buffer)
 					eenc := gob.NewEncoder(ebuffer)
