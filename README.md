@@ -15,6 +15,12 @@ Added in version 1.1.5:
 - ```vinterr, vintcnt``` fields for intercept errors and kill/repeat tasks on the fly in server configuration
 - ```lookout``` boolean, enable or disable reaction on errors from stdout
 
+Fixed in version 1.1.5:
+
+- Clearing the working queue, in case of regular and after crash, server restart
+- Improved extended error logging in app.log
+- Minor bug fixes
+
 Added in version 1.1.4:
 
 - Return error status code from shell
