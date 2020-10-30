@@ -558,8 +558,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 									errcode = 1
 								}
 
-								imsgerr = imsgerr + err.Error() + "\n"
-
 								if !shutdown {
 									appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
 								}
