@@ -36,11 +36,17 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sync"
 	"time"
 )
 
 // CtrlScheduler : Control threads scheduler
-func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
+func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// Wait Group
+
+	wg.Add(1)
 
 	// Variables
 

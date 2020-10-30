@@ -752,9 +752,7 @@ func main() {
 	ResetWorking(cldb, &wg)
 
 	cron.AddFunc(gron.Every(schtime*time.Second), func() {
-		wg.Add(1)
-		CtrlScheduler(cldb, keymutex)
-		wg.Done()
+		CtrlScheduler(cldb, keymutex, &wg)
 	})
 
 	// Garbage Collection Percent
