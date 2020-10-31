@@ -33,7 +33,6 @@ import (
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/nutsdb"
 	"github.com/pieterclaerhout/go-waitgroup"
-	"os"
 	"os/exec"
 	"regexp"
 	"sync"
@@ -349,65 +348,11 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					if !DirExists(fpath) {
 
-						stderr = fmt.Sprintf("Virtual Host [%s] | Can`t find directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+						stderr = fmt.Sprintf("Path [%s] | directory from json field path does not exists", fpath)
 
 						errcode = 1
 
 						appLogger.Errorf("| Virtual Host [%s] | Can`t find directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-
-						etsk = &RawTask{
-							Time:      ftmst,
-							Type:      ftype,
-							Path:      fpath,
-							Lock:      flock,
-							Command:   fcomm,
-							Threads:   fthreads,
-							Timeout:   ftout,
-							Ttltime:   fttl,
-							Interval:  fint,
-							Repeaterr: frerr,
-							Repeatcnt: frcnt,
-							Interr:    fierr,
-							Intcnt:    ficnt,
-							Lookout:   fsout,
-							Replace:   frepl,
-							Stdcode:   stdcode,
-							Stdout:    stdout,
-							Errcode:   errcode,
-							Stderr:    stderr,
-							Runtime:   float64(0),
-						}
-
-						err = penc.Encode(etsk)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Gob task encode error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
-						err = NDBDelete(cldb, rvbucket, bkey)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Delete received task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
-						err = NDBInsert(cldb, fvbucket, bkey, pbuffer.Bytes(), 0)
-						if err != nil {
-							appLogger.Errorf("| Virtual Host [%s] | Insert completed task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-							return
-						}
-
-						return
-
-					}
-
-					_, err = os.Stat(fpath)
-					if err != nil {
-
-						stderr = fmt.Sprintf("Virtual Host [%s] | Can`t stat directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-
-						errcode = 1
-
-						appLogger.Errorf("| Virtual Host [%s] | Can`t stat directory error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 
 						etsk = &RawTask{
 							Time:      ftmst,
@@ -784,6 +729,29 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						}
 
+						icnt.RLock()
+						virc := icnt.trycounter[skey]
+						icnt.RUnlock()
+
+						if virbool && virc > 0 && virc <= int(ficnt) {
+
+							err = NDBDelete(cldb, wvbucket, bkey)
+							if err != nil {
+								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+								return
+							}
+
+							return
+
+						}
+
+						icnt.Lock()
+						_, iok := icnt.trycounter[skey]
+						if iok {
+							delete(icnt.trycounter, skey)
+						}
+						icnt.Unlock()
+
 					}
 
 					if lenrreg > 0 {
@@ -815,6 +783,29 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 							}
 
 						}
+
+						rcnt.RLock()
+						vrrc := rcnt.trycounter[skey]
+						rcnt.RUnlock()
+
+						if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
+
+							err = NDBDelete(cldb, wvbucket, bkey)
+							if err != nil {
+								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+								return
+							}
+
+							return
+
+						}
+
+						rcnt.Lock()
+						_, rok := rcnt.trycounter[skey]
+						if rok {
+							delete(rcnt.trycounter, skey)
+						}
+						rcnt.Unlock()
 
 					}
 
@@ -848,60 +839,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					if err != nil {
 						appLogger.Errorf("| Virtual Host [%s] | Gob task encode error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
 						return
-					}
-
-					if intercept && lenireg > 0 {
-
-						icnt.RLock()
-						virc := icnt.trycounter[skey]
-						icnt.RUnlock()
-
-						if virbool && virc > 0 && virc <= int(ficnt) {
-
-							err = NDBDelete(cldb, wvbucket, bkey)
-							if err != nil {
-								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-								return
-							}
-
-							return
-
-						}
-
-						icnt.Lock()
-						_, iok := icnt.trycounter[skey]
-						if iok {
-							delete(icnt.trycounter, skey)
-						}
-						icnt.Unlock()
-
-					}
-
-					if lenrreg > 0 {
-
-						rcnt.RLock()
-						vrrc := rcnt.trycounter[skey]
-						rcnt.RUnlock()
-
-						if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
-
-							err = NDBDelete(cldb, wvbucket, bkey)
-							if err != nil {
-								appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
-								return
-							}
-
-							return
-
-						}
-
-						rcnt.Lock()
-						_, rok := rcnt.trycounter[skey]
-						if rok {
-							delete(rcnt.trycounter, skey)
-						}
-						rcnt.Unlock()
-
 					}
 
 					err = NDBDelete(cldb, rvbucket, bkey)
