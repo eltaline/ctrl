@@ -519,6 +519,14 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 						imsgerr = "Timeout mmutex lock error"
 						appLogger.Errorf("| Virtual Host [%s] | Timeout mmutex lock error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | Error [%s] | %v", vhost, skey, fpath, flock, scm, imsgerr, err)
 
+						err = NDBDelete(cldb, wvbucket, bkey)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+							return
+						}
+
+						return
+
 					}
 
 					kwg := waitgroup.NewWaitGroup(1)
