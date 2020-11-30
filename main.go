@@ -318,7 +318,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.1.5"
+	var version string = "1.1.6"
 	var vprint bool = false
 	var help bool = false
 
