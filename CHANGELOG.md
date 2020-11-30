@@ -1,3 +1,10 @@
+Version: 1.1.6
+========
+
+Fixed in version 1.1.6:
+
+- May be was fix stuck working queue
+
 Version: 1.1.5
 ========
 
