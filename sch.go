@@ -36,6 +36,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -50,6 +51,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 	// Variables
 
 	serr := errors.New("shutdown operation")
+	kerr := errors.New("signal: killed")
 
 	bprefix := []byte("t:")
 
@@ -254,6 +256,12 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					continue
 				}
 
+				defer func() {
+					vc.Lock()
+					vc.vcounter[pretthr]--
+					vc.Unlock()
+				}()
+
 				vc.Lock()
 				vc.vcounter[pretthr]++
 				vc.Unlock()
@@ -289,12 +297,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					vc.RUnlock()
 
 					qwait <- true
-
-					defer func() {
-						vc.Lock()
-						vc.vcounter[tthr]--
-						vc.Unlock()
-					}()
 
 					stdcode := 0
 					errcode := 0
@@ -401,6 +403,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					scm := shell + " -c " + "\"cd " + fpath + " && " + fcomm + "\""
 					cmm := exec.Command(shell, "-c", scm)
+					cmm.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 					pstdout, err := cmm.StdoutPipe()
 					if err != nil {
@@ -472,6 +475,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					time.Sleep(time.Duration(int(fint)*(vtscnt-1)) * time.Second)
 
+					killed := false
+
 					if keymutex.TryLock(cmkey) {
 
 						cwg.Add(func() {
@@ -494,7 +499,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 							}
 
 							err = cmm.Wait()
-
 							if err != nil {
 
 								if exitError, ok := err.(*exec.ExitError); ok {
@@ -507,9 +511,20 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 									appLogger.Errorf("| Virtual Host [%s] | Execute command error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, scm, err)
 								}
 
+								if err.Error() == kerr.Error() {
+
+									err = NDBDelete(cldb, wvbucket, bkey)
+									if err != nil {
+										appLogger.Errorf("| Virtual Host [%s] | Delete working task db error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, err)
+									}
+
+								}
+
 							}
 
-							crun <- true
+							if !killed {
+								crun <- true
+							}
 
 						})
 
@@ -537,9 +552,14 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						for {
 
-							if !keymutex.IsLock(cmkey) {
-								kill <- true
+							if !keymutex.IsLock(cmkey) || killed || shutdown {
+
+								if !killed {
+									kill <- true
+								}
+
 								break
+
 							}
 
 							time.Sleep(time.Duration(5) * time.Millisecond)
@@ -573,7 +593,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									mchvir := rgx.Rgx.MatchString(msg)
 
-									if mchvir {
+									if mchvir && keymutex.IsLock(cmkey) && !killed {
 
 										intercept = true
 										kill <- true
@@ -581,11 +601,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									}
 
+									if killed || shutdown {
+										break Loop
+									}
+
 								}
 
 							}
 
-							if !keymutex.IsLock(cmkey) {
+							if !keymutex.IsLock(cmkey) || killed || shutdown {
 								break
 							}
 
@@ -618,7 +642,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									mchvir := rgx.Rgx.MatchString(msg)
 
-									if mchvir {
+									if mchvir && keymutex.IsLock(cmkey) && !killed {
 
 										intercept = true
 										kill <- true
@@ -626,11 +650,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									}
 
+									if killed || shutdown {
+										break Loop
+									}
+
 								}
 
 							}
 
-							if !keymutex.IsLock(cmkey) {
+							if !keymutex.IsLock(cmkey) || killed || shutdown {
 								break
 							}
 
@@ -653,22 +681,45 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						case <-crun:
 
-							keymutex.UnLock(cmkey)
-							<-kill
+							killed = true
 							break Kill
 
 						case <-kill:
 
-							_ = cmm.Process.Kill()
-							<-crun
+							if cmm.Process != nil {
+
+								pgid, err := syscall.Getpgid(cmm.Process.Pid)
+								if err == nil {
+
+									zerr := syscall.Kill(-pgid, syscall.SIGKILL)
+									if zerr != nil {
+										appLogger.Errorf("| Virtual Host [%s] | Process kill error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, zerr)
+									}
+
+								}
+
+							}
+
+							killed = true
 							break Kill
 
 						case <-cmmt:
 
-							_ = cmm.Process.Kill()
-							<-crun
-							keymutex.UnLock(cmkey)
-							<-kill
+							if cmm.Process != nil {
+
+								pgid, err := syscall.Getpgid(cmm.Process.Pid)
+								if err == nil {
+
+									zerr := syscall.Kill(-pgid, syscall.SIGKILL)
+									if zerr != nil {
+										appLogger.Errorf("| Virtual Host [%s] | Process kill error | Key [%s] | Path [%s] | Lock [%s] | Command [%s] | %v", vhost, skey, fpath, flock, fcomm, zerr)
+									}
+
+								}
+
+							}
+
+							killed = true
 							errcode = 124
 							break Kill
 
@@ -888,5 +939,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 	}
 
 	vwg.Wait()
+
+	fmt.Println("Finished")
 
 }

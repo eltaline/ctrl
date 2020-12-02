@@ -1,3 +1,17 @@
+Version: 1.1.7
+========
+
+Incompatibilities:
+
+- Building under solaris / darwin is no longer supported due to lack of pgid support
+
+Fixed in version 1.1.7:
+
+- Fixed working queue hanging
+- Fixed hanging go routines
+- Fixed process termination logic
+- Fixed termination of child processes of executable commands
+
 Version: 1.1.6
 ========
 

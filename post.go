@@ -50,6 +50,14 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 	return func(ctx iris.Context) {
 		defer wg.Done()
 
+		var err error
+
+		// Wait Group
+
+		wg.Add(1)
+
+		// OnClose Connection
+
 		ikill := false
 
 		kill := make(chan bool)
@@ -71,12 +79,6 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 			clsmutex.UnLock(cls)
 
 		})
-
-		var err error
-
-		// Wait Group
-
-		wg.Add(1)
 
 		// Loggers
 

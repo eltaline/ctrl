@@ -18,8 +18,8 @@ builds:
       - freebsd
       - openbsd
       - netbsd
-      - solaris
-      - darwin
+#      - solaris
+#      - darwin
     goarch:
       - amd64
       - arm64
