@@ -230,7 +230,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 				prefbkey := task.Key
 				prefskey := string(task.Key)
-				preftmst := task.Time
+				preftmst := time.Now().Unix()
 				preftype := task.Type
 				prefpath := task.Path
 				preflock := task.Lock
@@ -870,6 +870,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					ebuffer := new(bytes.Buffer)
 					eenc := gob.NewEncoder(ebuffer)
+
+					ftmst = time.Now().Unix()
 
 					etsk = &RawTask{
 						Time:      ftmst,

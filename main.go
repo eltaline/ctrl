@@ -117,7 +117,7 @@ type strCIDR struct {
 	Addr string
 }
 
-// GetTask : type task for get video tasks
+// GetTask : type task for get tasks
 type GetTask struct {
 	Key       string   `json:"key"`
 	Time      int64    `json:"time"`
@@ -142,7 +142,7 @@ type GetTask struct {
 	Runtime   float64  `json:"runtime"`
 }
 
-// PostTask : type task for post video tasks
+// PostTask : type task for post tasks
 type PostTask struct {
 	Key       string   `json:"key"`
 	Type      string   `json:"type"`
@@ -161,7 +161,7 @@ type PostTask struct {
 	Replace   bool     `json:"replace"`
 }
 
-// DelTask : type task for delete video tasks
+// DelTask : type task for delete tasks
 type DelTask struct {
 	Key       string   `json:"key"`
 	Time      int64    `json:"time"`
@@ -188,7 +188,7 @@ type DelTask struct {
 	Delerr    string   `json:"delerr"`
 }
 
-// RawTask : raw type task for video tasks
+// RawTask : raw type task for tasks
 type RawTask struct {
 	Time      int64
 	Type      string
@@ -212,7 +212,7 @@ type RawTask struct {
 	Runtime   float64
 }
 
-// FullTask : full type task with key for video tasks
+// FullTask : full type task with key for tasks
 type FullTask struct {
 	Key       []byte
 	Time      int64
@@ -318,7 +318,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.1.7"
+	var version string = "1.1.8"
 	var vprint bool = false
 	var help bool = false
 

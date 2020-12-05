@@ -1,3 +1,10 @@
+Version: 1.1.8
+========
+
+Added in version 1.1.8:
+
+- Change the time of tasks in queues
+
 Version: 1.1.7
 ========
 
