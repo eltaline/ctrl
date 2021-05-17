@@ -48,9 +48,9 @@ nfpms:
     formats:
       - deb
       - rpm
-    vendor: "Eltaline"
-    homepage: "https://wzd.dev/"
-    maintainer: "Andrey Kuvshinov <dev@wzd.dev>"
+    vendor: "Eltaline <eltaline.ou@gmail.com>"
+    homepage: "https://elta.ee/"
+    maintainer: "Andrey Kuvshinov <syslinux@protonmail.com>"
     description: "Remote cTRL API Server"
     license: "Apache 2.0"
     name_template: "{{.ProjectName}}-{{.Version}}-{{.Os}}-{{.Arch}}"
@@ -85,16 +85,16 @@ scoop:
 
   commit_author:
     name: "Andrey Kuvshinov"
-    email: dev@wzd.dev
-  homepage: "https://wzd.dev/"
+    email: syslinux@protonmail.com
+  homepage: "https://elta.ee/"
   license: Apache 2.0
 
 brews:
  -
    commit_author:
      name: "Andrey Kuvshinov"
-     email: dev@wzd.dev
-   homepage: "https://wzd.dev/"
+     email: syslinux@protonmail.com
+   homepage: "https://elta.ee/"
    goarm: 7
 
 snapshot:
