@@ -21,6 +21,7 @@ require (
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kataras/golog v0.0.15
 	github.com/kataras/iris/v12 v12.1.9-0.20200518172100-7466d6169bc1
+	github.com/klauspost/compress v1.11.8 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect

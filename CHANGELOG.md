@@ -1,3 +1,10 @@
+Version: 1.1.9
+========
+
+Fixed in version 1.1.9:
+
+- Variable convertion
+
 Version: 1.1.8
 ========
 
