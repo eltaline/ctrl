@@ -64,7 +64,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 		ucl := uuid.Must(uuid.NewV4())
 		rtm := time.Now().UnixNano()
 
-		cls := string(rtm) + ":" + fmt.Sprintf("%x", ucl)
+		cls := fmt.Sprintf("%d", rtm) + ":" + fmt.Sprintf("%x", ucl)
 
 		ctx.OnClose(func() {
 
