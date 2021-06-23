@@ -53,7 +53,7 @@ nfpms:
     maintainer: "Andrey Kuvshinov <syslinux@protonmail.com>"
     description: "Remote cTRL API Server"
     license: "Apache 2.0"
-    name_template: "{{.ProjectName}}-{{.Version}}-{{.Os}}-{{.Arch}}"
+    file_name_template: "{{.ProjectName}}-{{.Version}}-{{.Os}}-{{.Arch}}"
 
     bindir: /usr/sbin
 
@@ -67,16 +67,30 @@ nfpms:
       - /var/lib/ctrl
       - /usr/share/ctrl
 
-    files:
-      "conf/systemd/ctrl.service": "/lib/systemd/system/ctrl.service"
-      "conf/logrotate.d/ctrl": "/etc/logrotate.d/ctrl"
-      "LICENSE": "/usr/share/ctrl/LICENSE"
-      "NOTICE": "/usr/share/ctrl/NOTICE"
+    contents:
+      - src: "conf/systemd/ctrl.service"
+        dst: "/lib/systemd/system/ctrl.service"
 
-    config_files:
-      "conf/ctrl/ctrl.conf": "/etc/ctrl/ctrl.conf"
-      "conf/ctrl/ips-localhost.conf": "/etc/ctrl/ips-localhost.conf"
-      "conf/ctrl/uss-localhost.conf": "/etc/ctrl/uss-localhost.conf"
+      - src: "conf/logrotate.d/ctrl"
+        dst: "/etc/logrotate.d/ctrl"
+
+      - src: "LICENSE"
+        dst: "/usr/share/ctrl/LICENSE"
+
+      - src: "NOTICE"
+        dst: "/usr/share/ctrl/NOTICE"
+
+      - src: "conf/ctrl/ctrl.conf"
+        dst: "/etc/ctrl/ctrl.conf"
+        type: config
+
+      - src: "conf/ctrl/ips-localhost.conf"
+        dst: "/etc/ctrl/ips-localhost.conf"
+        type: config
+
+      - src: "conf/ctrl/uss-localhost.conf"
+        dst: "/etc/ctrl/uss-localhost.conf"
+        type: config
 
     scripts:
       postinstall: "scripts/postinstall.sh"
