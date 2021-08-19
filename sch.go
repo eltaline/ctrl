@@ -31,7 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eltaline/mmutex"
-	"github.com/eltaline/nutsdb"
+	"github.com/xujiajun/nutsdb"
 	"github.com/pieterclaerhout/go-waitgroup"
 	"os/exec"
 	"regexp"
@@ -941,7 +941,5 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 	}
 
 	vwg.Wait()
-
-	fmt.Println("Finished")
 
 }
