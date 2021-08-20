@@ -1,3 +1,8 @@
+Version: 1.1.10
+========
+
+- Standart update
+
 Version: 1.1.9
 ========
 
