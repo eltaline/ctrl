@@ -26,7 +26,7 @@ package main
 
 import (
 	"bytes"
-	"github.com/eltaline/nutsdb"
+	"github.com/xujiajun/nutsdb"
 	"io/ioutil"
 )
 

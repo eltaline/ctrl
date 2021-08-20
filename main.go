@@ -32,7 +32,7 @@ import (
 	"fmt"
 	"github.com/eltaline/gron"
 	"github.com/eltaline/mmutex"
-	"github.com/eltaline/nutsdb"
+	"github.com/xujiajun/nutsdb"
 	"github.com/eltaline/toml"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/logger"
@@ -318,7 +318,7 @@ func init() {
 
 	var err error
 
-	var version string = "1.1.8"
+	var version string = "1.1.10"
 	var vprint bool = false
 	var help bool = false
 

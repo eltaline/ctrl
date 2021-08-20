@@ -26,7 +26,7 @@ package main
 
 import (
 	"errors"
-	"github.com/eltaline/nutsdb"
+	"github.com/xujiajun/nutsdb"
 	"sync"
 )
 

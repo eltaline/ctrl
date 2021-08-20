@@ -31,7 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eltaline/mmutex"
-	"github.com/eltaline/nutsdb"
+	"github.com/xujiajun/nutsdb"
 	"github.com/gobuffalo/uuid"
 	"github.com/kataras/iris/v12"
 	"github.com/pieterclaerhout/go-waitgroup"
