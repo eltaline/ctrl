@@ -95,6 +95,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 				return
 			}
 
+			time.Sleep(1 * time.Second)
+
 			mcompare := make(map[string]bool)
 
 			errempty := errors.New("bucket is empty")
@@ -155,8 +157,23 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					chktthr := vhost + ":" + rv.Type
 
 					mcchktthr, _ := vc.LoadOrStore(chktthr, counter.NewInt64())
-					if mcchktthr.(*counter.Cint64).Get() >= int64(rv.Threads) {
-						continue
+					ccchktthr := mcchktthr.(*counter.Cint64)
+					if ccchktthr.Get() >= int64(rv.Threads) {
+
+						for {
+
+							if ccchktthr.Get() < int64(rv.Threads) {
+								break
+							}
+
+							if shutdown {
+								return serr
+							}
+
+							time.Sleep(1 * time.Millisecond)
+
+						}
+
 					}
 
 					pair := rv.Type + "_" + rv.Lock
