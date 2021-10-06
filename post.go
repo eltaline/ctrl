@@ -32,7 +32,7 @@ import (
 	"fmt"
 	"github.com/eltaline/counter"
 	"github.com/eltaline/mmutex"
-	"github.com/gobuffalo/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/kataras/iris/v12"
 	"github.com/pieterclaerhout/go-waitgroup"
 	"github.com/xujiajun/nutsdb"
