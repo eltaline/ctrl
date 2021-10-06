@@ -30,11 +30,12 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"github.com/eltaline/counter"
 	"github.com/eltaline/mmutex"
-	"github.com/xujiajun/nutsdb"
 	"github.com/gobuffalo/uuid"
 	"github.com/kataras/iris/v12"
 	"github.com/pieterclaerhout/go-waitgroup"
+	"github.com/xujiajun/nutsdb"
 	"net"
 	"os/exec"
 	"strconv"
@@ -343,14 +344,15 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 		limit := 0
 
-		rc.RLock()
-		curthreads := rc.rcounter[vhost]
-		rc.RUnlock()
+		mctthr, _ := rc.LoadOrStore(vhost, counter.NewInt64())
+		cctthr := mctthr.(*counter.Cint64)
 
 		for {
 
-			if curthreads < rthreads {
-				limit = rthreads - curthreads
+			curthreads := cctthr.Get()
+
+			if int(curthreads) < rthreads {
+				limit = rthreads - int(curthreads)
 				break
 			}
 
@@ -362,7 +364,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 			default:
 
-				time.Sleep(time.Duration(5) * time.Millisecond)
+				time.Sleep(time.Duration(250) * time.Millisecond)
 
 			}
 
@@ -384,10 +386,6 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 			prefcomm := task.Command
 			preftout := task.Timeout
 
-			rc.Lock()
-			rc.rcounter[vhost]++
-			rc.Unlock()
-
 			qwait := make(chan bool)
 
 			qwg.Add(func() {
@@ -402,13 +400,10 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				fcomm := prefcomm
 				ftout := preftout
 
-				qwait <- true
+				cctthr.Incr()
+				defer cctthr.Decr()
 
-				defer func() {
-					rc.Lock()
-					rc.rcounter[vhost]--
-					rc.Unlock()
-				}()
+				qwait <- true
 
 				stdcode := 0
 				errcode := 0

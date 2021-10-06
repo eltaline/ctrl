@@ -30,9 +30,10 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"github.com/eltaline/counter"
 	"github.com/eltaline/mmutex"
-	"github.com/xujiajun/nutsdb"
 	"github.com/pieterclaerhout/go-waitgroup"
+	"github.com/xujiajun/nutsdb"
 	"os/exec"
 	"regexp"
 	"sync"
@@ -47,6 +48,12 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 	// Wait Group
 
 	wg.Add(1)
+
+	// Shutdown
+
+	if shutdown {
+		return
+	}
 
 	// Variables
 
@@ -67,6 +74,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 	for _, Server := range config.Server {
 
+		if shutdown {
+			continue
+		}
+
 		vwait := make(chan bool)
 
 		vwg.Add(func() {
@@ -79,6 +90,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 			fvbucket := "comp" + "_" + vhost + ":"
 
 			vwait <- true
+
+			if !keymutex.TryLock(rvbucket) {
+				return
+			}
 
 			mcompare := make(map[string]bool)
 
@@ -93,12 +108,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 			appLogger, applogfile := AppLogger()
 			defer applogfile.Close()
-
-			// Shutdown
-
-			if shutdown {
-				return
-			}
 
 			cerr := cldb.View(func(tx *nutsdb.Tx) error {
 
@@ -143,6 +152,13 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 						continue
 					}
 
+					chktthr := vhost + ":" + rv.Type
+
+					mcchktthr, _ := vc.LoadOrStore(chktthr, counter.NewInt64())
+					if mcchktthr.(*counter.Cint64).Get() >= int64(rv.Threads) {
+						continue
+					}
+
 					pair := rv.Type + "_" + rv.Lock
 					_, found := mcompare[pair]
 
@@ -164,23 +180,19 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 						return err
 					}
 
-					if working != nil {
+					for _, work := range working {
 
-						for _, work := range working {
+						var wv RawTask
 
-							var wv RawTask
+						wvdec := gob.NewDecoder(bytes.NewReader(work.Value))
+						err := wvdec.Decode(&wv)
+						if err != nil {
+							appLogger.Errorf("| Virtual Host [%s] | Gob decode from db error | %v", vhost, err)
+							continue
+						}
 
-							wvdec := gob.NewDecoder(bytes.NewReader(work.Value))
-							err := wvdec.Decode(&wv)
-							if err != nil {
-								appLogger.Errorf("| Virtual Host [%s] | Gob decode from db error | %v", vhost, err)
-								continue
-							}
-
-							if rv.Type == wv.Type && rv.Lock == wv.Lock {
-								continue Main
-							}
-
+						if rv.Type == wv.Type && rv.Lock == wv.Lock {
+							continue Main
 						}
 
 					}
@@ -216,16 +228,19 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 			})
 
 			if cerr != nil {
+				keymutex.UnLock(rvbucket)
 				appLogger.Errorf("| Virtual Host [%s] | Work with db error | %v", vhost, cerr)
 				return
 			}
+
+			keymutex.UnLock(rvbucket)
 
 			qwg := waitgroup.NewWaitGroup(-1)
 
 			for _, task := range ftsk {
 
 				if shutdown {
-					break
+					continue
 				}
 
 				prefbkey := task.Key
@@ -248,23 +263,16 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 				pretthr := vhost + ":" + preftype
 
-				vc.RLock()
-				curthreads := vc.vcounter[pretthr]
-				vc.RUnlock()
+				mcpretthr, _ := vc.LoadOrStore(pretthr, counter.NewInt64())
+				ccpretthr := mcpretthr.(*counter.Cint64)
 
-				if curthreads >= int(prefthreads) {
+				prevtscnt := ccpretthr.Get()
+
+				if prevtscnt >= int64(prefthreads) {
 					continue
 				}
 
-				defer func() {
-					vc.Lock()
-					vc.vcounter[pretthr]--
-					vc.Unlock()
-				}()
-
-				vc.Lock()
-				vc.vcounter[pretthr]++
-				vc.Unlock()
+				prevtscnt++
 
 				qwait := make(chan bool)
 
@@ -272,7 +280,10 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					var err error
 
-					tthr := pretthr
+					ccpretthr.Incr()
+					defer ccpretthr.Decr()
+
+					vtscnt := prevtscnt
 
 					bkey := prefbkey
 					skey := prefskey
@@ -291,10 +302,6 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					ficnt := preficnt
 					fsout := prefsout
 					frepl := prefrepl
-
-					vc.RLock()
-					vtscnt := vc.vcounter[tthr]
-					vc.RUnlock()
 
 					qwait <- true
 
@@ -473,7 +480,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					stime := time.Now()
 
-					time.Sleep(time.Duration(int(fint)*(vtscnt-1)) * time.Second)
+					time.Sleep(time.Duration(int(fint)*(int(vtscnt)-1)) * time.Second)
 
 					killed := false
 
@@ -483,6 +490,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 							<-ssync
 							close(ssync)
+
+							var err error
 
 							err = cmm.Start()
 							if err != nil {
@@ -760,6 +769,9 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					if intercept && lenireg > 0 {
 
+						mcicnt, _ := icnt.LoadOrStore(skey, counter.NewInt64())
+						ccicnt := mcicnt.(*counter.Cint64)
+
 						for _, rgx := range ireg {
 
 							var mchvio bool
@@ -776,9 +788,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									virbool = true
 
-									icnt.Lock()
-									icnt.trycounter[skey]++
-									icnt.Unlock()
+									ccicnt.Incr()
 
 									vircnt++
 
@@ -788,11 +798,9 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						}
 
-						icnt.RLock()
-						virc := icnt.trycounter[skey]
-						icnt.RUnlock()
+						virc := ccicnt.Get()
 
-						if virbool && virc > 0 && virc <= int(ficnt) {
+						if virbool && int(virc) > 0 && int(virc) <= int(ficnt) {
 
 							err = NDBDelete(cldb, wvbucket, bkey)
 							if err != nil {
@@ -804,16 +812,14 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						}
 
-						icnt.Lock()
-						_, iok := icnt.trycounter[skey]
-						if iok {
-							delete(icnt.trycounter, skey)
-						}
-						icnt.Unlock()
+						icnt.Delete(skey)
 
 					}
 
 					if lenrreg > 0 {
+
+						mcrcnt, _ := rcnt.LoadOrStore(skey, counter.NewInt64())
+						ccrcnt := mcrcnt.(*counter.Cint64)
 
 						for _, rgx := range rreg {
 
@@ -831,9 +837,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 									vrrbool = true
 
-									rcnt.Lock()
-									rcnt.trycounter[skey]++
-									rcnt.Unlock()
+									ccrcnt.Incr()
 
 									vrrcnt++
 
@@ -843,11 +847,9 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						}
 
-						rcnt.RLock()
-						vrrc := rcnt.trycounter[skey]
-						rcnt.RUnlock()
+						vrrc := ccrcnt.Get()
 
-						if vrrbool && vrrc > 0 && vrrc <= int(frcnt) {
+						if vrrbool && int(vrrc) > 0 && int(vrrc) <= int(frcnt) {
 
 							err = NDBDelete(cldb, wvbucket, bkey)
 							if err != nil {
@@ -859,12 +861,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 						}
 
-						rcnt.Lock()
-						_, rok := rcnt.trycounter[skey]
-						if rok {
-							delete(rcnt.trycounter, skey)
-						}
-						rcnt.Unlock()
+						rcnt.Delete(skey)
 
 					}
 
@@ -928,6 +925,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 				<-qwait
 				close(qwait)
+
+				time.Sleep(250 * time.Millisecond)
 
 			}
 

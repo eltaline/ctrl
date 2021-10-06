@@ -10,6 +10,7 @@ require (
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/dgraph-io/badger v1.6.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2 // indirect
+	github.com/eltaline/counter v0.0.0-20210626141722-b22056417112
 	github.com/eltaline/gron v0.0.0-20160621042432-e78485adab46
 	github.com/eltaline/mmutex v0.0.0-20210624131550-0cd205386e7d
 	github.com/eltaline/toml v0.3.1
@@ -49,6 +50,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
+	github.com/zhangyunhao116/skipmap v0.7.0
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 )

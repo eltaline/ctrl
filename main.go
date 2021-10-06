@@ -32,11 +32,12 @@ import (
 	"fmt"
 	"github.com/eltaline/gron"
 	"github.com/eltaline/mmutex"
-	"github.com/xujiajun/nutsdb"
 	"github.com/eltaline/toml"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/logger"
 	"github.com/kataras/iris/v12/middleware/recover"
+	"github.com/xujiajun/nutsdb"
+	"github.com/zhangyunhao116/skipmap"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -283,25 +284,10 @@ var (
 
 	schtime time.Duration = 5
 
-	vc = struct {
-		sync.RWMutex
-		vcounter map[string]int
-	}{vcounter: make(map[string]int)}
-
-	rc = struct {
-		sync.RWMutex
-		rcounter map[string]int
-	}{rcounter: make(map[string]int)}
-
-	rcnt = struct {
-		sync.RWMutex
-		trycounter map[string]int
-	}{trycounter: make(map[string]int)}
-
-	icnt = struct {
-		sync.RWMutex
-		trycounter map[string]int
-	}{trycounter: make(map[string]int)}
+	vc = skipmap.NewString()
+	rc = skipmap.NewString()
+	rcnt = skipmap.NewString()
+	icnt = skipmap.NewString()
 
 	logdir  string = "/var/log/ctrl"
 	logmode os.FileMode
