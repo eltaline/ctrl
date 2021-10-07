@@ -419,7 +419,6 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				ftout := preftout
 
 				cntvhs.Cnt.Incr()
-				defer cntvhs.Cnt.Decr()
 
 				qwait <- true
 
@@ -444,6 +443,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 					}
 
+					cntvhs.Cnt.Decr()
 					clsmutex.TryLock(cls)
 					return
 
@@ -466,6 +466,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 					}
 
+					cntvhs.Cnt.Decr()
 					clsmutex.TryLock(cls)
 					return
 
@@ -488,6 +489,7 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 					}
 
+					cntvhs.Cnt.Decr()
 					clsmutex.TryLock(cls)
 					return
 
@@ -604,6 +606,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				rsmx.Lock()
 				resp = append(resp, p)
 				rsmx.Unlock()
+
+				cntvhs.Cnt.Decr()
 
 			})
 
