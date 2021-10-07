@@ -37,6 +37,7 @@ import (
 	"math/rand"
 	"os/exec"
 	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -150,12 +151,35 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 						var rv RawTask
 
 						rkey := recv.Key
+						srkey := string(recv.Key)
 
 						rvdec := gob.NewDecoder(bytes.NewReader(recv.Value))
 						err := rvdec.Decode(&rv)
 						if err != nil {
 							appLogger.Errorf("| Virtual Host [%s] | Gob decode from db error | %v", vhost, err)
 							continue
+						}
+
+						srarr := strings.Split(srkey, ":")
+						if len(srarr) == 5 {
+
+							tkey := vhost + ":" + srarr[3] + ":" + srarr[4]
+
+							_, found := mcompare[tkey]
+
+							if found {
+								continue
+							}
+
+							if !found {
+								mcompare[tkey] = true
+							}
+
+						} else {
+
+							appLogger.Errorf("| Virtual Host [%s] | Bad pattern in key array error | Key [%s]", vhost, srkey)
+							continue
+
 						}
 
 						pair := rv.Type + "_" + rv.Lock
@@ -237,15 +261,15 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					/*
 
-					for i := 1; i < len(ftsk); i++ {
+						for i := 1; i < len(ftsk); i++ {
 
-						r := rand.Intn(i + 1)
+							r := rand.Intn(i + 1)
 
-						if i != r {
-							ftsk[r], ftsk[i] = ftsk[i], ftsk[r]
+							if i != r {
+								ftsk[r], ftsk[i] = ftsk[i], ftsk[r]
+							}
+
 						}
-
-					}
 
 					*/
 
