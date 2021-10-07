@@ -30,6 +30,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/eltaline/counter"
 	"github.com/eltaline/gron"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/toml"
@@ -37,7 +38,6 @@ import (
 	"github.com/kataras/iris/v12/middleware/logger"
 	"github.com/kataras/iris/v12/middleware/recover"
 	"github.com/xujiajun/nutsdb"
-	"github.com/zhangyunhao116/skipmap"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -248,6 +248,10 @@ type ResetTask struct {
 	Key []byte
 }
 
+type Cnts struct {
+	Cnt *counter.Cint64
+}
+
 // Global Variables
 
 var (
@@ -284,10 +288,10 @@ var (
 
 	schtime time.Duration = 5
 
-	vc = skipmap.NewString()
-	rc = skipmap.NewString()
-	rcnt = skipmap.NewString()
-	icnt = skipmap.NewString()
+	GlbMap struct {
+		sync.RWMutex
+		Glb map[string]*Cnts
+	}
 
 	logdir  string = "/var/log/ctrl"
 	logmode os.FileMode
@@ -325,6 +329,10 @@ func init() {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
+
+	// Global Counters Map Init
+
+	GlbMap.Glb = make(map[string]*Cnts)
 
 	// Load Configuration
 

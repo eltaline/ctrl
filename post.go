@@ -344,12 +344,30 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 
 		limit := 0
 
-		mctthr, _ := rc.LoadOrStore(vhost, counter.NewInt64())
-		cctthr := mctthr.(*counter.Cint64)
+		GlbMap.RLock()
+		cntvhs, ok := GlbMap.Glb[vhost]
+		GlbMap.RUnlock()
+
+		if !ok {
+
+			GlbMap.Lock()
+
+			cntvhs, ok = GlbMap.Glb[vhost]
+			if !ok {
+
+				GlbMap.Glb[vhost] = new(Cnts)
+				cntvhs = GlbMap.Glb[vhost]
+				cntvhs.Cnt = counter.NewInt64()
+
+			}
+
+			GlbMap.Unlock()
+
+		}
 
 		for {
 
-			curthreads := cctthr.Get()
+			curthreads := cntvhs.Cnt.Get()
 
 			if int(curthreads) < rthreads {
 				limit = rthreads - int(curthreads)
@@ -400,8 +418,8 @@ func CtrlRun(clsmutex *mmutex.Mutex, wg *sync.WaitGroup) iris.Handler {
 				fcomm := prefcomm
 				ftout := preftout
 
-				cctthr.Incr()
-				defer cctthr.Decr()
+				cntvhs.Cnt.Incr()
+				defer cntvhs.Cnt.Decr()
 
 				qwait <- true
 
