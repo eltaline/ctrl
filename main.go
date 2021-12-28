@@ -737,6 +737,13 @@ func main() {
 	}
 	defer cldb.Close()
 
+	err = NDBMerge(cldb, dbdir)
+	if err != nil {
+		appLogger.Errorf("Merge db error | %v", err)
+		fmt.Printf("Can`t merge db on start error | DB Directory [%s] | %v\n", dbdir, err)
+		os.Exit(1)
+	}
+
 	// Shell
 
 	//	shell = filepath.Clean(config.Global.SHELL)
