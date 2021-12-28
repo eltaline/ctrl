@@ -735,7 +735,6 @@ func main() {
 		fmt.Printf("Can`t open/create db error | DB Directory [%s] | %v\n", dbdir, err)
 		os.Exit(1)
 	}
-	defer cldb.Close()
 
 	err = NDBMerge(cldb, dbdir)
 	if err != nil {
@@ -743,6 +742,15 @@ func main() {
 		fmt.Printf("Can`t merge db on start error | DB Directory [%s] | %v\n", dbdir, err)
 		os.Exit(1)
 	}
+	cldb.Close()
+
+	cldb, err = nutsdb.Open(clopt)
+	if err != nil {
+		appLogger.Errorf("| Can`t open/create db error | DB Directory [%s] | %v", dbdir, err)
+		fmt.Printf("Can`t open/create db error | DB Directory [%s] | %v\n", dbdir, err)
+		os.Exit(1)
+	}
+	defer cldb.Close()
 
 	// Shell
 
