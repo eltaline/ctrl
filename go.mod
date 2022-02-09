@@ -11,7 +11,7 @@ require (
 	github.com/eltaline/gron v0.0.0-20160621042432-e78485adab46
 	github.com/eltaline/mmutex v0.0.0-20210624131550-0cd205386e7d
 	github.com/eltaline/toml v0.3.1
-	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/iris-contrib/jade v1.1.4 // indirect
