@@ -821,17 +821,6 @@ func main() {
 
 		ResetWorking(cldb, &wg)
 
-		// Merge DB
-
-		appLogger.Warnf("Merging db")
-
-		err = NDBMerge(cldb, dbdir)
-		if err != nil {
-			appLogger.Errorf("Merge db error | %v", err)
-		}
-
-		appLogger.Warnf("Finished merge db")
-
 		// Stop Iris
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)

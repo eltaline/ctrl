@@ -286,6 +286,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 				qwg := waitgroup.NewWaitGroup(128)
 
+				/*
+
 				go func() {
 
 					time.Sleep(30 * time.Second)
@@ -314,6 +316,8 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 					}
 
 				}()
+
+				*/
 
 				for _, task := range ftsk {
 
@@ -364,9 +368,9 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 					if cntthr.Cnt.Get() >= int64(prefthreads) {
 
-						mpc, _ := mpmap[pretthr]
+						mpc := mpmap[pretthr]
 
-						if mpc > 16 {
+						if mpc > 128 {
 							continue
 						}
 
@@ -385,7 +389,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 						intthr := pretthr
 
 						GlbMap.RLock()
-						qcntthr, _ := GlbMap.Glb[intthr]
+						qcntthr := GlbMap.Glb[intthr]
 						GlbMap.RUnlock()
 
 						bkey := prefbkey
@@ -416,7 +420,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 									break
 								}
 
-								time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+								time.Sleep(time.Duration(rand.Intn(250)) * time.Millisecond)
 
 							}
 
@@ -967,7 +971,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 							}
 
 							GlbMap.Lock()
-							cnticnt, ok = GlbMap.Glb[iskey]
+							_, ok = GlbMap.Glb[iskey]
 							if ok {
 								delete(GlbMap.Glb, iskey)
 							}
@@ -1043,7 +1047,7 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 							}
 
 							GlbMap.Lock()
-							cntrcnt, ok = GlbMap.Glb[rskey]
+							_, ok = GlbMap.Glb[rskey]
 							if ok {
 								delete(GlbMap.Glb, rskey)
 							}
