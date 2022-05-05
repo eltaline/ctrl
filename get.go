@@ -964,7 +964,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 					bucket = rvbucket
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
 					if tasks == nil {
@@ -983,7 +983,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 					bucket = wvbucket
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
 
@@ -1003,7 +1003,7 @@ func CtrlDel(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) iris.H
 
 					bucket = fvbucket
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
 
