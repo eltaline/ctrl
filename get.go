@@ -369,7 +369,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				case ttype != "" && queue == "received":
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(rvbucket, bprefix, rgxkey, -1, -1)
 					if tasks == nil {
@@ -386,7 +386,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				case ttype != "" && queue == "working":
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(wvbucket, bprefix, rgxkey, -1, -1)
 
@@ -404,7 +404,7 @@ func CtrlShow(cldb *nutsdb.DB, wg *sync.WaitGroup) iris.Handler {
 
 				case ttype != "" && queue == "completed":
 
-					rgxkey = "(.+" + ":" + ttype + ":" + ")$"
+					rgxkey = "(.+" + ttype + ":" + ")$"
 
 					tasks, _, err = tx.PrefixSearchScan(fvbucket, bprefix, rgxkey, -1, -1)
 
