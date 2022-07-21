@@ -1,3 +1,8 @@
+Version: 1.1.11
+========
+
+- Fix show/del by type functions
+
 Version: 1.1.10
 ========
 
