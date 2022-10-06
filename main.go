@@ -31,12 +31,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/eltaline/counter"
-	"github.com/eltaline/gron"
 	"github.com/eltaline/mmutex"
 	"github.com/eltaline/toml"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/logger"
 	"github.com/kataras/iris/v12/middleware/recover"
+	"github.com/robfig/cron/v3"
 	"github.com/xujiajun/nutsdb"
 	"io/ioutil"
 	"net"
@@ -286,7 +286,8 @@ var (
 
 	dbdir string = "/var/lib/ctrl/db"
 
-	schtime time.Duration = 5
+	schtime  = 5
+	schmutex = mmutex.NewMMutex()
 
 	GlbMap struct {
 		sync.RWMutex
@@ -676,11 +677,9 @@ func main() {
 
 	// Application Options
 
-	schtime = time.Duration(config.Global.SCHTIME)
+	// Scheduler
 
-	// Cron Scheduler
-
-	cron := gron.New()
+	schtime = config.Global.SCHTIME
 
 	// Only SSL
 
@@ -759,8 +758,23 @@ func main() {
 
 	ResetWorking(cldb, &wg)
 
-	cron.AddFunc(gron.Every(schtime*time.Second), func() {
-		CtrlScheduler(cldb, keymutex, &wg)
+	// Scheduler
+
+	scrname := "sch"
+	scrtime := "@every " + strconv.FormatInt(int64(schtime), 10) + "s"
+
+	cr := cron.New()
+	cr.AddFunc(scrtime, func() {
+
+		if !schmutex.IsLock(scrname) {
+			if schmutex.TryLock(scrname) {
+				defer schmutex.UnLock(scrname)
+				wg.Add(1)
+				CtrlScheduler(cldb, keymutex)
+				wg.Done()
+			}
+		}
+
 	})
 
 	// Garbage Collection Percent
@@ -929,7 +943,7 @@ func main() {
 
 	// Start Cron Scheduler
 
-	cron.Start()
+	cr.Start()
 
 	// Start WebServer
 

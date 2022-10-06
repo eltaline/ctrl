@@ -38,18 +38,12 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 )
 
 // CtrlScheduler : Control threads scheduler
-func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	// Wait Group
-
-	wg.Add(1)
+func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex) {
 
 	// Shutdown
 
@@ -288,34 +282,34 @@ func CtrlScheduler(cldb *nutsdb.DB, keymutex *mmutex.Mutex, wg *sync.WaitGroup) 
 
 				/*
 
-				go func() {
+					go func() {
 
-					time.Sleep(30 * time.Second)
+						time.Sleep(30 * time.Second)
 
-					for {
+						for {
 
-						if shutdown {
-							return
+							if shutdown {
+								return
+							}
+
+							c := 0
+
+							for _, mp := range mpmap {
+								c = c + mp
+							}
+
+							q := qwg.PendingCount()
+
+							if c > 16 && q < 4 {
+								keymutex.UnLock(rvbucket)
+								break
+							}
+
+							time.Sleep(250 * time.Millisecond)
+
 						}
 
-						c := 0
-
-						for _, mp := range mpmap {
-							c = c + mp
-						}
-
-						q := qwg.PendingCount()
-
-						if c > 16 && q < 4 {
-							keymutex.UnLock(rvbucket)
-							break
-						}
-
-						time.Sleep(250 * time.Millisecond)
-
-					}
-
-				}()
+					}()
 
 				*/
 
