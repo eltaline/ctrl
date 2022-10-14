@@ -773,7 +773,7 @@ func main() {
 				CtrlScheduler(cldb, keymutex)
 				wg.Done()
 			} else {
-				appLogger.Error().Msgf("Mmutex Lock Timeout | Name: [%s]", scrname)
+				appLogger.Errorf("| Mmutex Lock Timeout | Name: [%s]", scrname)
 			}
 		}
 
